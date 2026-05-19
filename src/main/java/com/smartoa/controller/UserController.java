@@ -1,16 +1,13 @@
 package com.smartoa.controller;
 
+import com.smartoa.config.JwtUtil;
 import com.smartoa.dto.LoginDTO;
 import com.smartoa.entity.User;
 import com.smartoa.service.UserService;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestController
@@ -18,23 +15,41 @@ import java.util.Map;
 public class UserController {
 
     private final UserService userService;
+    private final JwtUtil jwtUtil;
 
     @PostMapping("/api/login")
-    public Map<String, Object> login(@RequestBody LoginDTO dto, HttpSession session) {
+    public Map<String, Object> login(@RequestBody LoginDTO dto) {
         User user = userService.login(dto.getUsername(), dto.getPassword());
         if (user == null) {
             return Map.of("success", false, "message", "用户名或密码错误");
         }
-        session.setAttribute("userId", user.getId());
-        String redirectUrl = "MANAGER".equals(user.getRole())
-                ? "/manager/dashboard"
-                : "/employee/dashboard";
-        return Map.of("success", true, "redirectUrl", redirectUrl);
+        String token = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole());
+        Map<String, Object> userMap = new LinkedHashMap<>();
+        userMap.put("id", user.getId());
+        userMap.put("username", user.getUsername());
+        userMap.put("realName", user.getRealName());
+        userMap.put("role", user.getRole());
+        userMap.put("department", user.getDepartment());
+        return Map.of("success", true, "token", token, "user", userMap);
     }
 
-    @GetMapping("/api/logout")
-    public Map<String, Object> logout(HttpSession session) {
-        session.invalidate();
+    @GetMapping("/api/user/current")
+    public Map<String, Object> currentUser() {
+        User user = userService.getLoginUser();
+        if (user == null) {
+            return Map.of("success", false, "message", "未登录");
+        }
+        Map<String, Object> userMap = new LinkedHashMap<>();
+        userMap.put("id", user.getId());
+        userMap.put("username", user.getUsername());
+        userMap.put("realName", user.getRealName());
+        userMap.put("role", user.getRole());
+        userMap.put("department", user.getDepartment());
+        return Map.of("success", true, "user", userMap);
+    }
+
+    @PostMapping("/api/logout")
+    public Map<String, Object> logout() {
         return Map.of("success", true);
     }
 }

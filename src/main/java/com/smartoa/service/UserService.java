@@ -1,8 +1,8 @@
 package com.smartoa.service;
 
+import com.smartoa.config.UserContextHolder;
 import com.smartoa.entity.User;
 import com.smartoa.repository.UserRepository;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -18,8 +18,8 @@ public class UserService {
                 .orElse(null);
     }
 
-    public User getLoginUser(HttpSession session) {
-        Long userId = (Long) session.getAttribute("userId");
+    public User getLoginUser() {
+        Long userId = UserContextHolder.getUserId();
         if (userId == null) {
             return null;
         }
