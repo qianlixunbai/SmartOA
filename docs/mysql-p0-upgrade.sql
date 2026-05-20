@@ -1,23 +1,68 @@
 -- ============================================================
--- SmartOA P0 2级审批流转 — MySQL 迁移脚本
--- 如果你的 Workbench 里已有 smartoa 库的旧表，执行此脚本升级
--- 如果是全新库，先跑完 JPA ddl-auto=update 再跑本脚本填充种子数据
+-- SmartOA P0 — MySQL 建库 + 建表 + 种子数据（一次性执行）
+-- 用法：打开 MySQL Workbench，粘贴全部内容，执行
 -- ============================================================
 
--- 1. sys_user 表增加直属领导、部门总监字段
-ALTER TABLE sys_user ADD COLUMN direct_leader_id BIGINT NULL COMMENT '直属领导ID';
-ALTER TABLE sys_user ADD COLUMN department_head_id BIGINT NULL COMMENT '部门总监ID';
+CREATE DATABASE IF NOT EXISTS smartoa DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE smartoa;
 
--- 2. leave_request 表增加审批步骤和当前审批人字段
-ALTER TABLE leave_request ADD COLUMN approval_step INT NOT NULL DEFAULT 0 COMMENT '审批步骤(0=直属领导, 1=部门总监, 2=完成)';
-ALTER TABLE leave_request ADD COLUMN current_approver_id BIGINT NULL COMMENT '当前审批人ID';
+-- ==================== 建表 ====================
 
--- 3. approval_record 表增加审批步骤字段
-ALTER TABLE approval_record ADD COLUMN approval_step INT NOT NULL DEFAULT 0 COMMENT '审批步骤(0=直属领导, 1=部门总监)';
+DROP TABLE IF EXISTS approval_record;
+DROP TABLE IF EXISTS leave_request;
+DROP TABLE IF EXISTS approval_template;
+DROP TABLE IF EXISTS sys_user;
 
--- 4. 种子数据（组织层级：王经理是直属领导，张总监/李总监是部门总监）
--- 如果已有数据请先备份或清空
-DELETE FROM sys_user;
+CREATE TABLE sys_user (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(100) NOT NULL,
+    real_name VARCHAR(50) NOT NULL,
+    role VARCHAR(20) NOT NULL,
+    department VARCHAR(50),
+    direct_leader_id BIGINT,
+    department_head_id BIGINT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE approval_template (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description VARCHAR(500),
+    enabled BIT NOT NULL DEFAULT 1,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE leave_request (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    applicant_id BIGINT NOT NULL,
+    leave_type VARCHAR(20) NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    reason VARCHAR(500),
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    approval_step INT NOT NULL DEFAULT 0,
+    current_approver_id BIGINT,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (applicant_id) REFERENCES sys_user(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE approval_record (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    leave_request_id BIGINT NOT NULL,
+    approver_id BIGINT NOT NULL,
+    action VARCHAR(20) NOT NULL,
+    comment VARCHAR(500),
+    approval_step INT NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (leave_request_id) REFERENCES leave_request(id),
+    FOREIGN KEY (approver_id) REFERENCES sys_user(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ==================== 种子数据 ====================
+-- 组织层级：王经理(直属领导) → 张总监/李总监(部门总监)
+
 INSERT INTO sys_user (username, password, real_name, role, department, direct_leader_id, department_head_id) VALUES
   ('admin',     '123456', '王经理',   'MANAGER',  '技术部', NULL, 4),
   ('zhangsan',  '123456', '张三',     'EMPLOYEE', '技术部', 1, 4),
