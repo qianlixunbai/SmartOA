@@ -25,6 +25,9 @@ public class LeaveController {
         if (user == null) {
             return Map.of("success", false, "message", "请先登录");
         }
+        if (user.getDirectLeaderId() == null) {
+            return Map.of("success", false, "message", "您尚未分配直属领导，无法提交");
+        }
         try {
             leaveService.submitLeave(user.getId(), dto);
             return Map.of("success", true, "message", "提交成功");
@@ -38,9 +41,6 @@ public class LeaveController {
         User user = userService.getLoginUser();
         if (user == null) {
             return Map.of("success", false, "message", "请先登录");
-        }
-        if (!"MANAGER".equals(user.getRole())) {
-            return Map.of("success", false, "message", "无权限");
         }
         try {
             Long requestId = Long.valueOf(body.get("requestId"));
@@ -61,7 +61,14 @@ public class LeaveController {
 
     @GetMapping("/api/leave/pending")
     public List<LeaveRequest> getPendingRequests() {
-        return leaveService.getPendingRequests();
+        User user = userService.getLoginUser();
+        return leaveService.getPendingRequests(user.getId());
+    }
+
+    @GetMapping("/api/leave/done")
+    public List<LeaveRequest> getDoneRequests() {
+        User user = userService.getLoginUser();
+        return leaveService.getDoneRequests(user.getId());
     }
 
     @GetMapping("/api/leave/{id}")

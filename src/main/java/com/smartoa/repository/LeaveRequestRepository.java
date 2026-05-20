@@ -12,4 +12,8 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Long
     List<LeaveRequest> findByStatusOrderByCreateTimeDesc(String status);
 
     List<LeaveRequest> findByStatusNotOrderByCreateTimeDesc(String status);
+
+    List<LeaveRequest> findByCurrentApproverIdAndStatusOrderByCreateTimeDesc(Long approverId, String status);
+
+    List<LeaveRequest> findByCurrentApproverIdAndStatusNotOrderByCreateTimeDesc(Long approverId, String status);
 }

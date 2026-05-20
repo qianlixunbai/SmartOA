@@ -34,4 +34,8 @@ public class User {
 
     @Column(length = 50)
     private String department;
+
+    private Long directLeaderId;
+
+    private Long departmentHeadId;
 }

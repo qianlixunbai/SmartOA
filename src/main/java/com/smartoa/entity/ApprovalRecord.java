@@ -29,6 +29,9 @@ public class ApprovalRecord {
     @Column(nullable = false, length = 20)
     private String action;
 
+    @Column(nullable = false)
+    private Integer approvalStep;
+
     @Column(length = 500)
     private String comment;
 

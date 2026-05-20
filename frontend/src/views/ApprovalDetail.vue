@@ -6,6 +6,7 @@ import StatusTag from '@/components/StatusTag.vue'
 import ApprovalTimeline from '@/components/ApprovalTimeline.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useApprovalStore } from '@/stores/approval'
+import { STEP_LABELS, STATUS_MAP } from '@/utils/constants'
 
 const route = useRoute()
 const router = useRouter()
@@ -15,7 +16,35 @@ const comment = ref('')
 const submitting = ref(false)
 
 const id = computed(() => Number(route.params.id))
-const canApprove = computed(() => auth.isManager && store.currentDetail?.status === 'PENDING')
+
+const canApprove = computed(() => {
+  const detail = store.currentDetail
+  if (!detail) return false
+  return detail.status === 'PENDING' && detail.currentApproverId === auth.user?.id
+})
+
+const activeStep = computed(() => {
+  const detail = store.currentDetail
+  if (!detail) return 0
+  if (detail.status === 'REJECTED') return detail.approvalStep
+  if (detail.status === 'APPROVED') return 2
+  return detail.approvalStep
+})
+
+const stepStatus = (step) => {
+  const detail = store.currentDetail
+  if (!detail) return 'wait'
+  if (detail.status === 'REJECTED') {
+    if (step < detail.approvalStep) return 'finish'
+    if (step === detail.approvalStep) return 'error'
+    return 'wait'
+  }
+  if (detail.status === 'APPROVED') return step <= 2 ? 'finish' : 'wait'
+  // PENDING
+  if (step < detail.approvalStep) return 'finish'
+  if (step === detail.approvalStep) return 'process'
+  return 'wait'
+}
 
 async function handleApprove(action) {
   submitting.value = true
@@ -51,6 +80,17 @@ onMounted(async () => {
           <el-button @click="router.back()">返回</el-button>
         </div>
       </template>
+
+      <!-- 审批进度 -->
+      <el-steps :active="activeStep" finish-status="success" align-center class="mb-20">
+        <el-step
+          v-for="(label, idx) in STEP_LABELS"
+          :key="idx"
+          :title="label"
+          :status="stepStatus(idx)"
+        />
+      </el-steps>
+
       <el-descriptions :column="2" border>
         <el-descriptions-item label="申请人">{{ store.currentDetail?.applicant?.realName }}</el-descriptions-item>
         <el-descriptions-item label="部门">{{ store.currentDetail?.applicant?.department }}</el-descriptions-item>

@@ -38,6 +38,11 @@ public class LeaveRequest {
     @Column(nullable = false, length = 20)
     private String status;
 
+    @Column(nullable = false)
+    private Integer approvalStep;
+
+    private Long currentApproverId;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createTime;
 

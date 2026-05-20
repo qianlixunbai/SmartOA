@@ -45,11 +45,7 @@ function formatCell(row, col) {
 }
 
 function handleAction(id) {
-  if (props.actionType === 'approve') {
-    emit('action', id)
-  } else {
-    router.push(`/approval/${id}`)
-  }
+  emit('action', id)
 }
 </script>
 
@@ -65,8 +61,10 @@ function handleAction(id) {
       show-overflow-tooltip
     >
       <template #default="{ row }">
-        <StatusTag v-if="col.prop === 'status'" :status="row.status" />
-        <span v-else>{{ formatCell(row, col) }}</span>
+        <slot :name="col.prop" :row="row">
+          <StatusTag v-if="col.prop === 'status'" :status="row.status" />
+          <span v-else>{{ formatCell(row, col) }}</span>
+        </slot>
       </template>
     </el-table-column>
     <el-table-column v-if="showActions" label="操作" width="100" fixed="right">

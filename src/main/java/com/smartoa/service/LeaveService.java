@@ -31,6 +31,8 @@ public class LeaveService {
         request.setEndDate(dto.getEndDate());
         request.setReason(dto.getReason());
         request.setStatus("PENDING");
+        request.setApprovalStep(0);
+        request.setCurrentApproverId(applicant.getDirectLeaderId());
         return leaveRequestRepository.save(request);
     }
 
@@ -41,25 +43,47 @@ public class LeaveService {
         if (!"PENDING".equals(request.getStatus())) {
             throw new RuntimeException("该请假单已处理");
         }
+        if (!approverId.equals(request.getCurrentApproverId())) {
+            throw new RuntimeException("您不是当前审批人");
+        }
 
         User approver = userRepository.getReferenceById(approverId);
-        request.setStatus("APPROVE".equals(action) ? "APPROVED" : "REJECTED");
-        leaveRequestRepository.save(request);
+        int currentStep = request.getApprovalStep();
 
         ApprovalRecord record = new ApprovalRecord();
         record.setLeaveRequest(request);
         record.setApprover(approver);
         record.setAction(action);
         record.setComment(comment);
+        record.setApprovalStep(currentStep);
         approvalRecordRepository.save(record);
+
+        if ("REJECT".equals(action)) {
+            request.setStatus("REJECTED");
+            request.setCurrentApproverId(null);
+        } else {
+            if (currentStep == 0) {
+                request.setApprovalStep(1);
+                request.setCurrentApproverId(request.getApplicant().getDepartmentHeadId());
+            } else {
+                request.setApprovalStep(2);
+                request.setStatus("APPROVED");
+                request.setCurrentApproverId(null);
+            }
+        }
+        leaveRequestRepository.save(request);
     }
 
     public List<LeaveRequest> getMyRequests(Long applicantId) {
         return leaveRequestRepository.findByApplicantIdOrderByCreateTimeDesc(applicantId);
     }
 
-    public List<LeaveRequest> getPendingRequests() {
-        return leaveRequestRepository.findByStatusOrderByCreateTimeDesc("PENDING");
+    public List<LeaveRequest> getPendingRequests(Long approverId) {
+        return leaveRequestRepository.findByCurrentApproverIdAndStatusOrderByCreateTimeDesc(approverId, "PENDING");
+    }
+
+    public List<LeaveRequest> getDoneRequests(Long approverId) {
+        return leaveRequestRepository.findByCurrentApproverIdAndStatusNotOrderByCreateTimeDesc(approverId, "PENDING");
     }
 
     public LeaveRequest getRequestDetail(Long requestId) {

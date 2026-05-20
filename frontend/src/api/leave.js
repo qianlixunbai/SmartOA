@@ -16,6 +16,10 @@ export function getPendingRequests() {
   return api.get('/leave/pending')
 }
 
+export function getDoneRequests() {
+  return api.get('/leave/done')
+}
+
 export function getRequestDetail(id) {
   return api.get(`/leave/${id}`)
 }

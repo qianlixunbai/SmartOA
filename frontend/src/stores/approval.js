@@ -19,8 +19,7 @@ export const useApprovalStore = defineStore('approval', () => {
   }
 
   async function fetchDoneRequests() {
-    const all = await leaveApi.getPendingRequests()
-    doneRequests.value = all.filter(r => r.status !== 'PENDING')
+    doneRequests.value = await leaveApi.getDoneRequests()
   }
 
   async function fetchDetail(id) {

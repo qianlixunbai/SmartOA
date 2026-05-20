@@ -30,6 +30,8 @@ public class UserController {
         userMap.put("realName", user.getRealName());
         userMap.put("role", user.getRole());
         userMap.put("department", user.getDepartment());
+        userMap.put("directLeaderId", user.getDirectLeaderId());
+        userMap.put("departmentHeadId", user.getDepartmentHeadId());
         return Map.of("success", true, "token", token, "user", userMap);
     }
 
@@ -45,6 +47,8 @@ public class UserController {
         userMap.put("realName", user.getRealName());
         userMap.put("role", user.getRole());
         userMap.put("department", user.getDepartment());
+        userMap.put("directLeaderId", user.getDirectLeaderId());
+        userMap.put("departmentHeadId", user.getDepartmentHeadId());
         return Map.of("success", true, "user", userMap);
     }
 

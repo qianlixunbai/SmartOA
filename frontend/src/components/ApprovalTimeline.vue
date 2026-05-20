@@ -1,5 +1,5 @@
 <script setup>
-import { ACTION_MAP } from '@/utils/constants'
+import { ACTION_MAP, STEP_MAP } from '@/utils/constants'
 
 defineProps({
   records: { type: Array, default: () => [] }
@@ -24,7 +24,10 @@ function formatDate(dateStr) {
     >
       <p>
         <strong>{{ r.approver?.realName }}</strong>
-        <el-tag :type="ACTION_MAP[r.action]?.type || 'info'" size="small" style="margin-left:8px">
+        <el-tag size="small" type="info" style="margin-left:8px;margin-right:6px">
+          {{ STEP_MAP[r.approvalStep]?.label || '未知节点' }}
+        </el-tag>
+        <el-tag :type="ACTION_MAP[r.action]?.type || 'info'" size="small">
           {{ ACTION_MAP[r.action]?.label || r.action }}
         </el-tag>
       </p>
