@@ -23,6 +23,9 @@ public class LeaveRequest {
     @TableField("applicant_id")
     private Long applicantId;
 
+    @TableField("template_id")
+    private Long templateId;
+
     @TableField("leave_type")
     private String leaveType;
 
@@ -40,6 +43,9 @@ public class LeaveRequest {
 
     @TableField("approval_step")
     private Integer approvalStep;
+
+    @TableField("current_node_id")
+    private Long currentNodeId;
 
     @TableField("current_approver_id")
     private Long currentApproverId;

@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -12,31 +11,30 @@ import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
-@TableName("approval_record")
-public class ApprovalRecord {
+@TableName("approval_node")
+public class ApprovalNode {
 
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    @TableField("leave_request_id")
-    private Long leaveRequestId;
+    @TableField("template_id")
+    private Long templateId;
+
+    @TableField("node_name")
+    private String nodeName;
+
+    @TableField("sort_order")
+    private Integer sortOrder;
+
+    @TableField("approver_type")
+    private String approverType;
 
     @TableField("approver_id")
     private Long approverId;
 
-    @TableField("action")
-    private String action;
-
-    @TableField("approval_step")
-    private Integer approvalStep;
-
-    @TableField("node_id")
-    private Long nodeId;
-
-    @TableField("comment")
-    private String comment;
-
     @TableField("create_time")
     private LocalDateTime createTime;
+
+    @TableField("update_time")
+    private LocalDateTime updateTime;
 }

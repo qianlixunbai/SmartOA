@@ -1,6 +1,8 @@
 package com.smartoa.controller;
 
+import com.smartoa.entity.ApprovalNode;
 import com.smartoa.entity.ApprovalTemplate;
+import com.smartoa.entity.TemplateField;
 import com.smartoa.entity.User;
 import com.smartoa.service.TemplateService;
 import com.smartoa.service.UserService;
@@ -55,5 +57,39 @@ public class TemplateController {
         }
         templateService.delete(id);
         return Map.of("success", true, "message", "删除成功");
+    }
+
+    // ========== 审批节点 ==========
+
+    @GetMapping("/api/templates/{id}/nodes")
+    public List<ApprovalNode> listNodes(@PathVariable Long id) {
+        return templateService.listNodes(id);
+    }
+
+    @PostMapping("/api/templates/{id}/nodes")
+    public Map<String, Object> saveNodes(@PathVariable Long id, @RequestBody List<ApprovalNode> nodes) {
+        User user = userService.getLoginUser();
+        if (!"MANAGER".equals(user.getRole())) {
+            return Map.of("success", false, "message", "无权限");
+        }
+        templateService.saveNodes(id, nodes);
+        return Map.of("success", true, "message", "保存成功");
+    }
+
+    @DeleteMapping("/api/templates/{id}/nodes/{nodeId}")
+    public Map<String, Object> deleteNode(@PathVariable Long id, @PathVariable Long nodeId) {
+        User user = userService.getLoginUser();
+        if (!"MANAGER".equals(user.getRole())) {
+            return Map.of("success", false, "message", "无权限");
+        }
+        templateService.deleteNode(nodeId);
+        return Map.of("success", true, "message", "删除成功");
+    }
+
+    // ========== 表单字段 ==========
+
+    @GetMapping("/api/templates/{id}/fields")
+    public List<TemplateField> listFields(@PathVariable Long id) {
+        return templateService.listFields(id);
     }
 }

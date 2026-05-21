@@ -5,6 +5,7 @@ import java.time.LocalDate;
 
 @Data
 public class LeaveSubmitDTO {
+    private Long templateId;
     private String leaveType;
     private LocalDate startDate;
     private LocalDate endDate;
