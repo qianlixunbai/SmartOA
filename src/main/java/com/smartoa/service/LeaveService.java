@@ -45,6 +45,7 @@ public class LeaveService {
 
         // 动态读取模板的审批节点，找到第一个节点并解析审批人
         advanceToNextNode(request, applicant);
+        leaveRequestMapper.updateById(request);
         return request;
     }
 
