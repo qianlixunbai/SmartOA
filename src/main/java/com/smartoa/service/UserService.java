@@ -1,8 +1,9 @@
 package com.smartoa.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.smartoa.config.UserContextHolder;
 import com.smartoa.entity.User;
-import com.smartoa.repository.UserRepository;
+import com.smartoa.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -10,12 +11,15 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class UserService {
 
-    private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
     public User login(String username, String password) {
-        return userRepository.findByUsername(username)
-                .filter(u -> u.getPassword().equals(password))
-                .orElse(null);
+        User user = userMapper.selectOne(new LambdaQueryWrapper<User>()
+                .eq(User::getUsername, username));
+        if (user != null && user.getPassword().equals(password)) {
+            return user;
+        }
+        return null;
     }
 
     public User getLoginUser() {
@@ -23,6 +27,6 @@ public class UserService {
         if (userId == null) {
             return null;
         }
-        return userRepository.findById(userId).orElse(null);
+        return userMapper.selectById(userId);
     }
 }

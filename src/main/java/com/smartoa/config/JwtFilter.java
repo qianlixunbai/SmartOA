@@ -1,6 +1,6 @@
 package com.smartoa.config;
 
-import com.smartoa.repository.UserRepository;
+import com.smartoa.mapper.UserMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,7 +14,7 @@ import java.io.IOException;
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
-    private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -51,7 +51,7 @@ public class JwtFilter extends OncePerRequestFilter {
         }
 
         Long userId = jwtUtil.getUserIdFromToken(token);
-        if (userRepository.findById(userId).isEmpty()) {
+        if (userMapper.selectById(userId) == null) {
             response.setStatus(401);
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write("{\"success\":false,\"message\":\"用户不存在\"}");

@@ -1,8 +1,10 @@
 package com.smartoa.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,32 +12,31 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-@Table(name = "sys_user")
+@TableName("sys_user")
 public class User {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 50)
+    @TableField("username")
     private String username;
 
     @JsonIgnore
-    @Column(nullable = false, length = 100)
+    @TableField("password")
     private String password;
 
-    @Column(nullable = false, length = 50)
+    @TableField("real_name")
     private String realName;
 
-    @Column(nullable = false, length = 20)
+    @TableField("role")
     private String role;
 
-    @Column(length = 50)
+    @TableField("department")
     private String department;
 
+    @TableField("direct_leader_id")
     private Long directLeaderId;
 
+    @TableField("department_head_id")
     private Long departmentHeadId;
 }

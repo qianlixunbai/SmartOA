@@ -1,12 +1,13 @@
 package com.smartoa.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.smartoa.dto.LeaveSubmitDTO;
 import com.smartoa.entity.ApprovalRecord;
 import com.smartoa.entity.LeaveRequest;
 import com.smartoa.entity.User;
-import com.smartoa.repository.ApprovalRecordRepository;
-import com.smartoa.repository.LeaveRequestRepository;
-import com.smartoa.repository.UserRepository;
+import com.smartoa.mapper.ApprovalRecordMapper;
+import com.smartoa.mapper.LeaveRequestMapper;
+import com.smartoa.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,15 +18,18 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LeaveService {
 
-    private final LeaveRequestRepository leaveRequestRepository;
-    private final ApprovalRecordRepository approvalRecordRepository;
-    private final UserRepository userRepository;
+    private final LeaveRequestMapper leaveRequestMapper;
+    private final ApprovalRecordMapper approvalRecordMapper;
+    private final UserMapper userMapper;
 
     @Transactional
     public LeaveRequest submitLeave(Long applicantId, LeaveSubmitDTO dto) {
-        User applicant = userRepository.getReferenceById(applicantId);
+        User applicant = userMapper.selectById(applicantId);
+        if (applicant == null) {
+            throw new RuntimeException("用户不存在");
+        }
         LeaveRequest request = new LeaveRequest();
-        request.setApplicant(applicant);
+        request.setApplicantId(applicantId);
         request.setLeaveType(dto.getLeaveType());
         request.setStartDate(dto.getStartDate());
         request.setEndDate(dto.getEndDate());
@@ -33,13 +37,16 @@ public class LeaveService {
         request.setStatus("PENDING");
         request.setApprovalStep(0);
         request.setCurrentApproverId(applicant.getDirectLeaderId());
-        return leaveRequestRepository.save(request);
+        leaveRequestMapper.insert(request);
+        return request;
     }
 
     @Transactional
     public void approveLeave(Long requestId, Long approverId, String action, String comment) {
-        LeaveRequest request = leaveRequestRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("请假单不存在"));
+        LeaveRequest request = leaveRequestMapper.selectById(requestId);
+        if (request == null) {
+            throw new RuntimeException("请假单不存在");
+        }
         if (!"PENDING".equals(request.getStatus())) {
             throw new RuntimeException("该请假单已处理");
         }
@@ -47,16 +54,16 @@ public class LeaveService {
             throw new RuntimeException("您不是当前审批人");
         }
 
-        User approver = userRepository.getReferenceById(approverId);
+        User approver = userMapper.selectById(approverId);
         int currentStep = request.getApprovalStep();
 
         ApprovalRecord record = new ApprovalRecord();
-        record.setLeaveRequest(request);
-        record.setApprover(approver);
+        record.setLeaveRequestId(requestId);
+        record.setApproverId(approverId);
         record.setAction(action);
         record.setComment(comment);
         record.setApprovalStep(currentStep);
-        approvalRecordRepository.save(record);
+        approvalRecordMapper.insert(record);
 
         if ("REJECT".equals(action)) {
             request.setStatus("REJECTED");
@@ -64,34 +71,44 @@ public class LeaveService {
         } else {
             if (currentStep == 0) {
                 request.setApprovalStep(1);
-                request.setCurrentApproverId(request.getApplicant().getDepartmentHeadId());
+                User applicant = userMapper.selectById(request.getApplicantId());
+                request.setCurrentApproverId(applicant.getDepartmentHeadId());
             } else {
                 request.setApprovalStep(2);
                 request.setStatus("APPROVED");
                 request.setCurrentApproverId(null);
             }
         }
-        leaveRequestRepository.save(request);
+        leaveRequestMapper.updateById(request);
     }
 
     public List<LeaveRequest> getMyRequests(Long applicantId) {
-        return leaveRequestRepository.findByApplicantIdOrderByCreateTimeDesc(applicantId);
+        return leaveRequestMapper.selectList(new LambdaQueryWrapper<LeaveRequest>()
+                .eq(LeaveRequest::getApplicantId, applicantId)
+                .orderByDesc(LeaveRequest::getCreateTime));
     }
 
     public List<LeaveRequest> getPendingRequests(Long approverId) {
-        return leaveRequestRepository.findByCurrentApproverIdAndStatusOrderByCreateTimeDesc(approverId, "PENDING");
+        return leaveRequestMapper.selectList(new LambdaQueryWrapper<LeaveRequest>()
+                .eq(LeaveRequest::getCurrentApproverId, approverId)
+                .eq(LeaveRequest::getStatus, "PENDING")
+                .orderByDesc(LeaveRequest::getCreateTime));
     }
 
     public List<LeaveRequest> getDoneRequests(Long approverId) {
-        return leaveRequestRepository.findByCurrentApproverIdAndStatusNotOrderByCreateTimeDesc(approverId, "PENDING");
+        return leaveRequestMapper.selectList(new LambdaQueryWrapper<LeaveRequest>()
+                .eq(LeaveRequest::getCurrentApproverId, approverId)
+                .ne(LeaveRequest::getStatus, "PENDING")
+                .orderByDesc(LeaveRequest::getCreateTime));
     }
 
     public LeaveRequest getRequestDetail(Long requestId) {
-        return leaveRequestRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("请假单不存在"));
+        return leaveRequestMapper.selectById(requestId);
     }
 
     public List<ApprovalRecord> getApprovalRecords(Long requestId) {
-        return approvalRecordRepository.findByLeaveRequestIdOrderByCreateTimeAsc(requestId);
+        return approvalRecordMapper.selectList(new LambdaQueryWrapper<ApprovalRecord>()
+                .eq(ApprovalRecord::getLeaveRequestId, requestId)
+                .orderByAsc(ApprovalRecord::getCreateTime));
     }
 }

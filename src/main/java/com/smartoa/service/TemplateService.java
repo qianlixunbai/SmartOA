@@ -1,44 +1,51 @@
 package com.smartoa.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.smartoa.entity.ApprovalTemplate;
-import com.smartoa.repository.ApprovalTemplateRepository;
+import com.smartoa.mapper.ApprovalTemplateMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class TemplateService {
 
-    private final ApprovalTemplateRepository templateRepository;
+    private final ApprovalTemplateMapper templateMapper;
 
     public List<ApprovalTemplate> listAll() {
-        return templateRepository.findAll();
+        return templateMapper.selectList(null);
     }
 
     public ApprovalTemplate getById(Long id) {
-        return templateRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("模板不存在"));
+        return templateMapper.selectById(id);
     }
 
     @Transactional
-    public ApprovalTemplate create(ApprovalTemplate template) {
-        return templateRepository.save(template);
+    public void create(ApprovalTemplate template) {
+        template.setCreateTime(LocalDateTime.now());
+        template.setUpdateTime(LocalDateTime.now());
+        templateMapper.insert(template);
     }
 
     @Transactional
-    public ApprovalTemplate update(Long id, ApprovalTemplate data) {
-        ApprovalTemplate template = getById(id);
+    public void update(Long id, ApprovalTemplate data) {
+        ApprovalTemplate template = templateMapper.selectById(id);
+        if (template == null) {
+            throw new RuntimeException("模板不存在");
+        }
         template.setName(data.getName());
         template.setDescription(data.getDescription());
         template.setEnabled(data.isEnabled());
-        return templateRepository.save(template);
+        template.setUpdateTime(LocalDateTime.now());
+        templateMapper.updateById(template);
     }
 
     @Transactional
     public void delete(Long id) {
-        templateRepository.deleteById(id);
+        templateMapper.deleteById(id);
     }
 }

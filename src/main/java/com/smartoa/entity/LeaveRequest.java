@@ -1,6 +1,9 @@
 package com.smartoa.entity;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,52 +14,39 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(name = "leave_request")
+@TableName("leave_request")
 public class LeaveRequest {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "applicant_id", nullable = false)
-    private User applicant;
+    @TableField("applicant_id")
+    private Long applicantId;
 
-    @Column(nullable = false, length = 20)
+    @TableField("leave_type")
     private String leaveType;
 
-    @Column(nullable = false)
+    @TableField("start_date")
     private LocalDate startDate;
 
-    @Column(nullable = false)
+    @TableField("end_date")
     private LocalDate endDate;
 
-    @Column(length = 500)
+    @TableField("reason")
     private String reason;
 
-    @Column(nullable = false, length = 20)
+    @TableField("status")
     private String status;
 
-    @Column(nullable = false)
+    @TableField("approval_step")
     private Integer approvalStep;
 
+    @TableField("current_approver_id")
     private Long currentApproverId;
 
-    @Column(nullable = false, updatable = false)
+    @TableField("create_time")
     private LocalDateTime createTime;
 
-    @Column(nullable = false)
+    @TableField("update_time")
     private LocalDateTime updateTime;
-
-    @PrePersist
-    protected void onCreate() {
-        createTime = LocalDateTime.now();
-        updateTime = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updateTime = LocalDateTime.now();
-    }
 }
