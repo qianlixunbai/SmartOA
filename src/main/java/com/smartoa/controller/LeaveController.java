@@ -53,6 +53,39 @@ public class LeaveController {
         }
     }
 
+    // ========== 撤回 ==========
+
+    @PostMapping("/api/leave/{id}/withdraw")
+    public Map<String, Object> withdrawLeave(@PathVariable Long id) {
+        User user = userService.getLoginUser();
+        if (user == null) {
+            return Map.of("success", false, "message", "请先登录");
+        }
+        try {
+            leaveService.withdrawLeave(id, user.getId());
+            return Map.of("success", true, "message", "撤回成功");
+        } catch (Exception e) {
+            return Map.of("success", false, "message", e.getMessage());
+        }
+    }
+
+    // ========== 转派 ==========
+
+    @PostMapping("/api/leave/{id}/transfer")
+    public Map<String, Object> transferLeave(@PathVariable Long id, @RequestBody Map<String, Long> body) {
+        User user = userService.getLoginUser();
+        if (user == null) {
+            return Map.of("success", false, "message", "请先登录");
+        }
+        try {
+            Long toUserId = body.get("toUserId");
+            leaveService.transferLeave(id, user.getId(), toUserId);
+            return Map.of("success", true, "message", "转派成功");
+        } catch (Exception e) {
+            return Map.of("success", false, "message", e.getMessage());
+        }
+    }
+
     @GetMapping("/api/leave/my-requests")
     public List<LeaveRequest> getMyRequests() {
         User user = userService.getLoginUser();

@@ -147,6 +147,70 @@ public class LeaveService {
         };
     }
 
+    // ========== 撤回 ==========
+
+    @Transactional
+    public void withdrawLeave(Long requestId, Long applicantId) {
+        LeaveRequest request = leaveRequestMapper.selectById(requestId);
+        if (request == null) {
+            throw new RuntimeException("请假单不存在");
+        }
+        if (!"PENDING".equals(request.getStatus())) {
+            throw new RuntimeException("只能撤回审批中的申请");
+        }
+        if (!applicantId.equals(request.getApplicantId())) {
+            throw new RuntimeException("只能撤回自己的申请");
+        }
+
+        ApprovalRecord record = new ApprovalRecord();
+        record.setLeaveRequestId(requestId);
+        record.setApproverId(applicantId);
+        record.setAction("WITHDRAW");
+        record.setApprovalStep(request.getApprovalStep());
+        record.setNodeId(request.getCurrentNodeId());
+        approvalRecordMapper.insert(record);
+
+        request.setStatus("WITHDRAWN");
+        request.setCurrentApproverId(null);
+        request.setCurrentNodeId(null);
+        leaveRequestMapper.updateById(request);
+    }
+
+    // ========== 转派 ==========
+
+    @Transactional
+    public void transferLeave(Long requestId, Long currentApproverId, Long toUserId) {
+        LeaveRequest request = leaveRequestMapper.selectById(requestId);
+        if (request == null) {
+            throw new RuntimeException("请假单不存在");
+        }
+        if (!"PENDING".equals(request.getStatus())) {
+            throw new RuntimeException("只能转派审批中的申请");
+        }
+        if (!currentApproverId.equals(request.getCurrentApproverId())) {
+            throw new RuntimeException("您不是当前审批人，无法转派");
+        }
+
+        User target = userMapper.selectById(toUserId);
+        if (target == null) {
+            throw new RuntimeException("目标用户不存在");
+        }
+
+        ApprovalRecord record = new ApprovalRecord();
+        record.setLeaveRequestId(requestId);
+        record.setApproverId(currentApproverId);
+        record.setAction("TRANSFER");
+        record.setComment("转派给 " + target.getRealName());
+        record.setApprovalStep(request.getApprovalStep());
+        record.setNodeId(request.getCurrentNodeId());
+        approvalRecordMapper.insert(record);
+
+        request.setCurrentApproverId(toUserId);
+        leaveRequestMapper.updateById(request);
+    }
+
+    // ========== 查询 ==========
+
     public List<LeaveRequest> getMyRequests(Long applicantId) {
         return leaveRequestMapper.selectList(new LambdaQueryWrapper<LeaveRequest>()
                 .eq(LeaveRequest::getApplicantId, applicantId)
