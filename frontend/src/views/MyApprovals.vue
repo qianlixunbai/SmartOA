@@ -1,19 +1,19 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import LeaveTable from '@/components/LeaveTable.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useApprovalStore } from '@/stores/approval'
-import { STEP_MAP } from '@/utils/constants'
+import { useUserStore } from '@/stores/users'
 
 const auth = useAuthStore()
 const store = useApprovalStore()
+const userStore = useUserStore()
 const router = useRouter()
 const activeTab = ref(auth.isManager ? 'pending' : 'my')
 
 const pendingColumns = [
-  { prop: 'applicant.realName', label: '申请人', width: 100 },
-  { prop: 'applicant.department', label: '部门', width: 100 },
+  { prop: 'applicantId', label: '申请人', width: 100, isUser: true },
   { prop: 'leaveType', label: '类型', width: 80 },
   { prop: 'dates', label: '日期范围', width: 200 },
   { prop: 'reason', label: '原因', minWidth: 150 },
@@ -23,8 +23,7 @@ const pendingColumns = [
 ]
 
 const doneColumns = [
-  { prop: 'applicant.realName', label: '申请人', width: 100 },
-  { prop: 'applicant.department', label: '部门', width: 100 },
+  { prop: 'applicantId', label: '申请人', width: 100, isUser: true },
   { prop: 'leaveType', label: '类型', width: 80 },
   { prop: 'dates', label: '日期范围', width: 200 },
   { prop: 'reason', label: '原因', minWidth: 150 },
@@ -41,7 +40,8 @@ function handleView(id) {
   router.push(`/approval/${id}`)
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await userStore.fetchUsers()
   store.fetchMyRequests()
   if (auth.isManager) {
     store.fetchPendingRequests()
@@ -62,7 +62,7 @@ onMounted(() => {
             @action="handleApprove"
           >
             <template #stepLabel="{ row }">
-              <el-tag size="small" type="warning">{{ STEP_MAP[row.approvalStep]?.label || '未知' }}</el-tag>
+              <el-tag size="small" type="warning">第{{ row.approvalStep + 1 }}步</el-tag>
             </template>
             <template #myAction="{ row }">
               <el-tag size="small" type="info">待处理</el-tag>

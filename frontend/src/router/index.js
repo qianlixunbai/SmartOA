@@ -41,6 +41,12 @@ const routes = [
     name: 'TemplateEdit',
     component: () => import('@/views/TemplateEdit.vue'),
     meta: { title: '编辑模板', requiresAuth: true, role: 'MANAGER' }
+  },
+  {
+    path: '/stats',
+    name: 'Stats',
+    component: () => import('@/views/Stats.vue'),
+    meta: { title: '统计报表', requiresAuth: true }
   }
 ]
 

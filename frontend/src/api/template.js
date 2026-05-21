@@ -19,3 +19,15 @@ export function updateTemplate(id, data) {
 export function deleteTemplate(id) {
   return api.delete(`/templates/${id}`)
 }
+
+export function getTemplateNodes(id) {
+  return api.get(`/templates/${id}/nodes`)
+}
+
+export function saveTemplateNodes(id, nodes) {
+  return api.post(`/templates/${id}/nodes`, nodes)
+}
+
+export function getTemplateFields(id) {
+  return api.get(`/templates/${id}/fields`)
+}

@@ -1,9 +1,19 @@
 <script setup>
-import { ACTION_MAP, STEP_MAP } from '@/utils/constants'
+import { inject } from 'vue'
+import { ACTION_MAP } from '@/utils/constants'
 
-defineProps({
-  records: { type: Array, default: () => [] }
+const props = defineProps({
+  records: { type: Array, default: () => [] },
+  nodes: { type: Array, default: () => [] }
 })
+
+const getUserName = inject('getUserName', (id) => `用户${id}`)
+
+function getNodeName(nodeId) {
+  if (!nodeId || props.nodes.length === 0) return '未知节点'
+  const node = props.nodes.find(n => n.id === nodeId)
+  return node ? node.nodeName : `节点${nodeId}`
+}
 
 function formatDate(dateStr) {
   if (!dateStr) return ''
@@ -20,12 +30,12 @@ function formatDate(dateStr) {
       :key="r.id"
       :timestamp="formatDate(r.createTime)"
       placement="top"
-      :color="r.action === 'APPROVE' ? '#67c23a' : '#f56c6c'"
+      :color="r.action === 'APPROVE' ? '#67c23a' : r.action === 'TRANSFER' ? '#e6a23c' : '#f56c6c'"
     >
       <p>
-        <strong>{{ r.approver?.realName }}</strong>
+        <strong>{{ getUserName(r.approverId) }}</strong>
         <el-tag size="small" type="info" style="margin-left:8px;margin-right:6px">
-          {{ STEP_MAP[r.approvalStep]?.label || '未知节点' }}
+          {{ getNodeName(r.nodeId) }}
         </el-tag>
         <el-tag :type="ACTION_MAP[r.action]?.type || 'info'" size="small">
           {{ ACTION_MAP[r.action]?.label || r.action }}

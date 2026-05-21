@@ -27,3 +27,11 @@ export function getRequestDetail(id) {
 export function getApprovalRecords(id) {
   return api.get(`/leave/${id}/records`)
 }
+
+export function withdrawLeave(id) {
+  return api.post(`/leave/${id}/withdraw`)
+}
+
+export function transferLeave(id, toUserId) {
+  return api.post(`/leave/${id}/transfer`, { toUserId })
+}

@@ -11,3 +11,7 @@ export function getCurrentUser() {
 export function logout() {
   return api.post('/logout')
 }
+
+export function getUsers() {
+  return api.get('/users/list')
+}

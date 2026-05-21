@@ -6,43 +6,66 @@ import StatusTag from '@/components/StatusTag.vue'
 import ApprovalTimeline from '@/components/ApprovalTimeline.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useApprovalStore } from '@/stores/approval'
-import { STEP_LABELS, STATUS_MAP } from '@/utils/constants'
+import { useUserStore } from '@/stores/users'
+import { getTemplateNodes } from '@/api/template'
+import { transferLeave } from '@/api/leave'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const store = useApprovalStore()
+const userStore = useUserStore()
+
 const comment = ref('')
 const submitting = ref(false)
+const nodes = ref([])
+const transferUserId = ref(null)
+const showTransfer = ref(false)
 
 const id = computed(() => Number(route.params.id))
 
+const detail = computed(() => store.currentDetail)
+const applicant = computed(() => userStore.getUser(detail.value?.applicantId))
+
 const canApprove = computed(() => {
-  const detail = store.currentDetail
-  if (!detail) return false
-  return detail.status === 'PENDING' && detail.currentApproverId === auth.user?.id
+  if (!detail.value) return false
+  return detail.value.status === 'PENDING' && detail.value.currentApproverId === auth.user?.id
+})
+
+const canWithdraw = computed(() => {
+  if (!detail.value) return false
+  return detail.value.status === 'PENDING' && detail.value.applicantId === auth.user?.id
+})
+
+const canTransfer = computed(() => {
+  return canApprove.value
 })
 
 const activeStep = computed(() => {
-  const detail = store.currentDetail
-  if (!detail) return 0
-  if (detail.status === 'REJECTED') return detail.approvalStep
-  if (detail.status === 'APPROVED') return 2
-  return detail.approvalStep
+  if (!detail.value) return 0
+  if (detail.value.status === 'REJECTED' || detail.value.status === 'WITHDRAWN') return detail.value.approvalStep
+  if (detail.value.status === 'APPROVED') return nodes.value.length
+  const idx = nodes.value.findIndex(n => n.id === detail.value.currentNodeId)
+  return idx >= 0 ? idx : 0
 })
 
-const stepStatus = (step) => {
-  const detail = store.currentDetail
-  if (!detail) return 'wait'
-  if (detail.status === 'REJECTED') {
-    if (step < detail.approvalStep) return 'finish'
-    if (step === detail.approvalStep) return 'error'
+const stepStatus = (idx) => {
+  if (!detail.value || nodes.value.length === 0) return 'wait'
+  const currentIdx = nodes.value.findIndex(n => n.id === detail.value.currentNodeId)
+  if (detail.value.status === 'REJECTED') {
+    if (idx < detail.value.approvalStep) return 'finish'
+    if (idx === detail.value.approvalStep) return 'error'
     return 'wait'
   }
-  if (detail.status === 'APPROVED') return step <= 2 ? 'finish' : 'wait'
+  if (detail.value.status === 'WITHDRAWN') {
+    return idx < detail.value.approvalStep ? 'finish' : 'wait'
+  }
+  if (detail.value.status === 'APPROVED') return 'finish'
   // PENDING
-  if (step < detail.approvalStep) return 'finish'
-  if (step === detail.approvalStep) return 'process'
+  if (currentIdx >= 0) {
+    if (idx < currentIdx) return 'finish'
+    if (idx === currentIdx) return 'process'
+  }
   return 'wait'
 }
 
@@ -59,6 +82,36 @@ async function handleApprove(action) {
   }
 }
 
+async function handleWithdraw() {
+  submitting.value = true
+  try {
+    const { withdrawLeave } = await import('@/api/leave')
+    await withdrawLeave(id.value)
+    ElMessage.success('已撤回')
+    await store.fetchDetail(id.value)
+  } catch {
+  } finally {
+    submitting.value = false
+  }
+}
+
+async function handleTransfer() {
+  if (!transferUserId.value) {
+    ElMessage.warning('请选择转派目标')
+    return
+  }
+  submitting.value = true
+  try {
+    await transferLeave(id.value, transferUserId.value)
+    ElMessage.success('转派成功')
+    showTransfer.value = false
+    await store.fetchDetail(id.value)
+  } catch {
+  } finally {
+    submitting.value = false
+  }
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return ''
   const d = new Date(dateStr)
@@ -67,7 +120,11 @@ function formatDate(dateStr) {
 }
 
 onMounted(async () => {
+  await userStore.fetchUsers()
   await Promise.all([store.fetchDetail(id.value), store.fetchRecords(id.value)])
+  if (store.currentDetail?.templateId) {
+    nodes.value = await getTemplateNodes(store.currentDetail.templateId)
+  }
 })
 </script>
 
@@ -81,30 +138,32 @@ onMounted(async () => {
         </div>
       </template>
 
-      <!-- 审批进度 -->
-      <el-steps :active="activeStep" finish-status="success" align-center class="mb-20">
+      <!-- 审批进度 — 动态节点 -->
+      <el-steps v-if="nodes.length > 0" :active="activeStep" finish-status="success" align-center class="mb-20">
         <el-step
-          v-for="(label, idx) in STEP_LABELS"
-          :key="idx"
-          :title="label"
+          v-for="(node, idx) in nodes"
+          :key="node.id"
+          :title="node.nodeName"
           :status="stepStatus(idx)"
         />
+        <el-step title="完成" :status="detail?.status === 'APPROVED' ? 'finish' : 'wait'" />
       </el-steps>
 
       <el-descriptions :column="2" border>
-        <el-descriptions-item label="申请人">{{ store.currentDetail?.applicant?.realName }}</el-descriptions-item>
-        <el-descriptions-item label="部门">{{ store.currentDetail?.applicant?.department }}</el-descriptions-item>
-        <el-descriptions-item label="请假类型">{{ store.currentDetail?.leaveType }}</el-descriptions-item>
+        <el-descriptions-item label="申请人">{{ applicant?.realName || detail?.applicantId }}</el-descriptions-item>
+        <el-descriptions-item label="部门">{{ applicant?.department || '' }}</el-descriptions-item>
+        <el-descriptions-item label="请假类型">{{ detail?.leaveType }}</el-descriptions-item>
         <el-descriptions-item label="状态">
-          <StatusTag v-if="store.currentDetail" :status="store.currentDetail.status" />
+          <StatusTag v-if="detail" :status="detail.status" />
         </el-descriptions-item>
-        <el-descriptions-item label="开始日期">{{ store.currentDetail?.startDate }}</el-descriptions-item>
-        <el-descriptions-item label="结束日期">{{ store.currentDetail?.endDate }}</el-descriptions-item>
-        <el-descriptions-item label="请假原因" :span="2">{{ store.currentDetail?.reason }}</el-descriptions-item>
-        <el-descriptions-item label="提交时间" :span="2">{{ formatDate(store.currentDetail?.createTime) }}</el-descriptions-item>
+        <el-descriptions-item label="开始日期">{{ detail?.startDate }}</el-descriptions-item>
+        <el-descriptions-item label="结束日期">{{ detail?.endDate }}</el-descriptions-item>
+        <el-descriptions-item label="请假原因" :span="2">{{ detail?.reason }}</el-descriptions-item>
+        <el-descriptions-item label="提交时间" :span="2">{{ formatDate(detail?.createTime) }}</el-descriptions-item>
       </el-descriptions>
     </el-card>
 
+    <!-- 审批操作 -->
     <el-card v-if="canApprove" shadow="never" class="mb-20">
       <template #header><span>审批操作</span></template>
       <el-input
@@ -114,15 +173,45 @@ onMounted(async () => {
         placeholder="请输入审批意见（可选）"
         class="mb-16"
       />
-      <div class="approve-actions">
-        <el-button type="success" :loading="submitting" @click="handleApprove('APPROVE')">通过</el-button>
-        <el-button type="danger" :loading="submitting" @click="handleApprove('REJECT')">驳回</el-button>
+      <div class="action-row">
+        <div>
+          <el-button type="warning" @click="showTransfer = true">转派</el-button>
+        </div>
+        <div class="approve-actions">
+          <el-button type="success" :loading="submitting" @click="handleApprove('APPROVE')">通过</el-button>
+          <el-button type="danger" :loading="submitting" @click="handleApprove('REJECT')">驳回</el-button>
+        </div>
       </div>
     </el-card>
 
+    <!-- 转派弹窗 -->
+    <el-dialog v-model="showTransfer" title="转派审批" width="400px">
+      <el-select v-model="transferUserId" placeholder="请选择转派目标" class="w-full">
+        <el-option
+          v-for="u in userStore.users"
+          :key="u.id"
+          :label="`${u.realName} (${u.department || ''})`"
+          :value="u.id"
+        />
+      </el-select>
+      <template #footer>
+        <el-button @click="showTransfer = false">取消</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleTransfer">确定转派</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 撤回按钮 -->
+    <el-card v-if="canWithdraw" shadow="never" class="mb-20">
+      <div class="action-row">
+        <span>该申请正在审批中，你可以撤回</span>
+        <el-button type="warning" :loading="submitting" @click="handleWithdraw">撤回申请</el-button>
+      </div>
+    </el-card>
+
+    <!-- 审批记录 -->
     <el-card shadow="never">
       <template #header><span>审批记录</span></template>
-      <ApprovalTimeline :records="store.currentRecords" />
+      <ApprovalTimeline :records="store.currentRecords" :nodes="nodes" />
     </el-card>
   </div>
 </template>
@@ -131,6 +220,8 @@ onMounted(async () => {
 .page { max-width: 800px; margin: 0 auto; }
 .mb-20 { margin-bottom: 20px; }
 .mb-16 { margin-bottom: 16px; }
+.w-full { width: 100%; }
 .card-header { display: flex; justify-content: space-between; align-items: center; }
-.approve-actions { display: flex; gap: 12px; justify-content: flex-end; }
+.action-row { display: flex; justify-content: space-between; align-items: center; }
+.approve-actions { display: flex; gap: 12px; }
 </style>

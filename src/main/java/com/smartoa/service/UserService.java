@@ -7,6 +7,8 @@ import com.smartoa.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -28,5 +30,9 @@ public class UserService {
             return null;
         }
         return userMapper.selectById(userId);
+    }
+
+    public List<User> listAll() {
+        return userMapper.selectList(null);
     }
 }

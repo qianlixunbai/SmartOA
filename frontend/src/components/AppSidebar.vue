@@ -2,16 +2,25 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { DocumentAdd, List, Setting, Plus } from '@element-plus/icons-vue'
+import { DocumentAdd, List, Setting, Plus, DataAnalysis, Download } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const auth = useAuthStore()
 
 const activeMenu = computed(() => route.path)
 
+function handleExport() {
+  const token = localStorage.getItem('token')
+  const a = document.createElement('a')
+  a.href = `/api/export/leaves`
+  a.download = ''
+  a.click()
+}
+
 const menuItems = [
   { path: '/submit-application', title: '提交申请', icon: DocumentAdd },
-  { path: '/my-approvals', title: '我的审批', icon: List }
+  { path: '/my-approvals', title: '我的审批', icon: List },
+  { path: '/stats', title: '统计报表', icon: DataAnalysis }
 ]
 </script>
 
@@ -44,6 +53,11 @@ const menuItems = [
           <span>新建模板</span>
         </el-menu-item>
       </el-sub-menu>
+
+      <el-menu-item v-if="auth.isManager" @click="handleExport">
+        <el-icon><Download /></el-icon>
+        <span>导出Excel</span>
+      </el-menu-item>
     </el-menu>
   </div>
 </template>

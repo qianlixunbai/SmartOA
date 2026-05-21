@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -55,5 +56,10 @@ public class UserController {
     @PostMapping("/api/logout")
     public Map<String, Object> logout() {
         return Map.of("success", true);
+    }
+
+    @GetMapping("/api/users/list")
+    public List<User> listUsers() {
+        return userService.listAll();
     }
 }

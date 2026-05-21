@@ -1,11 +1,13 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import LeaveForm from '@/components/LeaveForm.vue'
 import LeaveTable from '@/components/LeaveTable.vue'
 import { useApprovalStore } from '@/stores/approval'
+import { useUserStore } from '@/stores/users'
 
 const store = useApprovalStore()
+const userStore = useUserStore()
 
 async function handleSubmit(formData) {
   try {
@@ -16,7 +18,8 @@ async function handleSubmit(formData) {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await userStore.fetchUsers()
   store.fetchMyRequests()
 })
 </script>

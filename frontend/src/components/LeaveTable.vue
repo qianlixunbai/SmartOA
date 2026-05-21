@@ -1,6 +1,5 @@
 <script setup>
-import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, inject } from 'vue'
 import StatusTag from './StatusTag.vue'
 
 const props = defineProps({
@@ -11,10 +10,11 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['action'])
-const router = useRouter()
+
+const getUserName = inject('getUserName', (id) => `用户${id}`)
 
 const leaveColumns = [
-  { prop: 'applicant.realName', label: '申请人', width: 100 },
+  { prop: 'applicantId', label: '申请人', width: 100, isUser: true },
   { prop: 'leaveType', label: '类型', width: 80 },
   { prop: 'dates', label: '日期范围', width: 200 },
   { prop: 'reason', label: '原因', minWidth: 150 },
@@ -25,7 +25,10 @@ const leaveColumns = [
 const finalColumns = computed(() => props.columns.length > 0 ? props.columns : leaveColumns)
 
 function getValue(row, prop) {
-  return prop.split('.').reduce((o, k) => o?.[k], row)
+  if (prop === 'applicantId' || prop === 'currentApproverId') {
+    return getUserName(row[prop])
+  }
+  return row[prop]
 }
 
 function formatDate(dateStr) {
