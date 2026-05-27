@@ -50,6 +50,9 @@ public class LeaveRequest {
     @TableField("current_approver_id")
     private Long currentApproverId;
 
+    @TableField("timeout_time")
+    private LocalDateTime timeoutTime;
+
     @TableField("create_time")
     private LocalDateTime createTime;
 

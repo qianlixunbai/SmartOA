@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Clock } from '@element-plus/icons-vue'
 import StatusTag from '@/components/StatusTag.vue'
 import ApprovalTimeline from '@/components/ApprovalTimeline.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -46,6 +47,12 @@ const canWithdraw = computed(() => {
 
 const canTransfer = computed(() => {
   return canApprove.value
+})
+
+const timeoutWarning = computed(() => {
+  if (!detail.value || !detail.value.timeoutTime) return null
+  if (detail.value.status !== 'PENDING') return null
+  return formatDate(detail.value.timeoutTime)
 })
 
 const activeStep = computed(() => {
@@ -179,6 +186,14 @@ onMounted(async () => {
       </div>
     </el-card>
 
+    <!-- 超时提醒 -->
+    <el-card v-if="timeoutWarning" shadow="never" class="mb-20 timeout-card">
+      <div class="timeout-warning">
+        <el-icon :size="18"><Clock /></el-icon>
+        <span>当前节点将于 <strong>{{ timeoutWarning }}</strong> 超时，超时后将自动处理</span>
+      </div>
+    </el-card>
+
     <!-- 审批操作 -->
     <el-card v-if="canApprove" shadow="never" class="mb-20">
       <template #header><span>审批操作</span></template>
@@ -241,4 +256,6 @@ onMounted(async () => {
 .action-row { display: flex; justify-content: space-between; align-items: center; }
 .approve-actions { display: flex; gap: 12px; }
 .approver-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.timeout-card { border-left: 4px solid #E6A23C; }
+.timeout-warning { display: flex; align-items: center; gap: 8px; color: #E6A23C; }
 </style>

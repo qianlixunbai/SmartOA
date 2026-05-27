@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getTemplateById, createTemplate, updateTemplate, getTemplateNodes, saveTemplateNodes } from '@/api/template'
 import { useUserStore } from '@/stores/users'
-import { APPROVER_TYPES, SIGN_TYPES } from '@/utils/constants'
+import { APPROVER_TYPES, SIGN_TYPES, TIMEOUT_ACTIONS } from '@/utils/constants'
 
 const route = useRoute()
 const router = useRouter()
@@ -52,6 +52,7 @@ onMounted(async () => {
       ...n,
       _uid: ++i,
       _showCondition: !!n.conditionExpression,
+      _showTimeout: !!(n.timeoutHours && n.timeoutHours > 0),
       _approverIdsArr: n.approverIds ? n.approverIds.split(',').map(Number) : []
     }))
     uidCounter = nodes.value.length
@@ -70,7 +71,11 @@ function addNode() {
     signType: 'SINGLE',
     approverIds: null,
     conditionExpression: null,
+    timeoutHours: null,
+    timeoutAction: 'ESCALATE',
+    escalateToUserId: null,
     _showCondition: false,
+    _showTimeout: false,
     _approverIdsArr: []
   })
 }
@@ -107,10 +112,11 @@ async function handleSave() {
     if (isEdit.value) {
       await updateTemplate(Number(route.params.id), data)
       // re-assign sortOrder before saving
-      const ordered = nodes.value.map(({ _uid, _showCondition, _approverIdsArr, ...n }, i) => ({
+      const ordered = nodes.value.map(({ _uid, _showCondition, _showTimeout, _approverIdsArr, ...n }, i) => ({
         ...n,
         sortOrder: i,
-        approverIds: Array.isArray(_approverIdsArr) && _approverIdsArr.length > 0 ? _approverIdsArr.join(',') : null
+        approverIds: Array.isArray(_approverIdsArr) && _approverIdsArr.length > 0 ? _approverIdsArr.join(',') : null,
+        timeoutHours: n.timeoutHours && n.timeoutHours > 0 ? n.timeoutHours : null
       }))
       await saveTemplateNodes(Number(route.params.id), ordered)
       ElMessage.success('更新成功')
@@ -286,6 +292,67 @@ async function handleSave() {
                   >
                     移除
                   </el-button>
+                </div>
+              </div>
+
+              <!-- 超时设置 -->
+              <div class="condition-row">
+                <el-button
+                  v-if="!node._showTimeout"
+                  link
+                  type="warning"
+                  size="small"
+                  @click="node._showTimeout = true"
+                >
+                  + 超时
+                </el-button>
+                <div v-else class="timeout-area">
+                  <div class="timeout-row">
+                    <el-input-number
+                      v-model="node.timeoutHours"
+                      :min="1"
+                      :max="720"
+                      placeholder="小时"
+                      size="small"
+                      class="timeout-hours-input"
+                    />
+                    <span class="timeout-label">小时未处理则</span>
+                    <el-select
+                      v-model="node.timeoutAction"
+                      size="small"
+                      class="timeout-action-select"
+                    >
+                      <el-option
+                        v-for="ta in TIMEOUT_ACTIONS"
+                        :key="ta.value"
+                        :label="ta.label"
+                        :value="ta.value"
+                      />
+                    </el-select>
+                    <el-select
+                      v-if="node.timeoutAction === 'ESCALATE'"
+                      v-model="node.escalateToUserId"
+                      placeholder="选择转派目标"
+                      size="small"
+                      class="timeout-user-select"
+                      clearable
+                    >
+                      <el-option
+                        v-for="u in userStore.users"
+                        :key="u.id"
+                        :label="u.realName"
+                        :value="u.id"
+                      />
+                    </el-select>
+                    <el-button
+                      link
+                      type="info"
+                      size="small"
+                      @click="node._showTimeout = false; node.timeoutHours = null"
+                    >
+                      移除
+                    </el-button>
+                  </div>
                 </div>
               </div>
 
@@ -480,6 +547,36 @@ async function handleSave() {
 
 .condition-input {
   width: 280px;
+}
+
+/* ── 超时设置 ── */
+.timeout-area {
+  padding: 8px 0 0 0;
+}
+
+.timeout-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.timeout-hours-input {
+  width: 100px;
+}
+
+.timeout-label {
+  font-size: 13px;
+  color: #909399;
+  white-space: nowrap;
+}
+
+.timeout-action-select {
+  width: 140px;
+}
+
+.timeout-user-select {
+  width: 160px;
 }
 
 /* ── 删除按钮 ── */

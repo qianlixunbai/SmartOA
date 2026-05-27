@@ -26,4 +26,10 @@ export const SIGN_TYPES = [
   { value: 'OR_SIGN', label: '或签（任一同意）' }
 ]
 
+export const TIMEOUT_ACTIONS = [
+  { value: 'ESCALATE', label: '转派给指定人' },
+  { value: 'AUTO_APPROVE', label: '自动通过' },
+  { value: 'AUTO_REJECT', label: '自动驳回' }
+]
+
 export const STEP_LABELS = ['直属领导审批', '部门总监审批', '完成']

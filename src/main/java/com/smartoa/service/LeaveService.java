@@ -21,6 +21,7 @@ import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -102,6 +103,7 @@ public class LeaveService {
             request.setStatus("REJECTED");
             request.setCurrentApproverId(null);
             request.setCurrentNodeId(null);
+            request.setTimeoutTime(null);
             leaveRequestMapper.updateById(request);
             if (task != null) {
                 task.setStatus("COMPLETED");
@@ -137,6 +139,7 @@ public class LeaveService {
                     request.setStatus("APPROVED");
                     request.setCurrentApproverId(null);
                     request.setCurrentNodeId(null);
+                    request.setTimeoutTime(null);
                 }
                 leaveRequestMapper.updateById(request);
             } else {
@@ -153,6 +156,7 @@ public class LeaveService {
                         request.setStatus("APPROVED");
                         request.setCurrentApproverId(null);
                         request.setCurrentNodeId(null);
+                        request.setTimeoutTime(null);
                     }
                     leaveRequestMapper.updateById(request);
                 }
@@ -165,6 +169,7 @@ public class LeaveService {
                 request.setStatus("APPROVED");
                 request.setCurrentApproverId(null);
                 request.setCurrentNodeId(null);
+                request.setTimeoutTime(null);
             }
             leaveRequestMapper.updateById(request);
         }
@@ -216,6 +221,13 @@ public class LeaveService {
                 } else {
                     request.setCurrentApproverId(approverIds.get(0));
                 }
+
+                if (node.getTimeoutHours() != null && node.getTimeoutHours() > 0) {
+                    request.setTimeoutTime(LocalDateTime.now().plusHours(node.getTimeoutHours()));
+                } else {
+                    request.setTimeoutTime(null);
+                }
+
                 return true;
             }
         }
@@ -310,6 +322,7 @@ public class LeaveService {
         request.setStatus("WITHDRAWN");
         request.setCurrentApproverId(null);
         request.setCurrentNodeId(null);
+        request.setTimeoutTime(null);
         leaveRequestMapper.updateById(request);
     }
 
@@ -376,6 +389,110 @@ public class LeaveService {
             repaired++;
         }
         return repaired;
+    }
+
+    // ========== 超时自动升级 ==========
+
+    @Transactional
+    public int checkTimeouts() {
+        List<LeaveRequest> timedOut = leaveRequestMapper.selectList(
+                new LambdaQueryWrapper<LeaveRequest>()
+                        .eq(LeaveRequest::getStatus, "PENDING")
+                        .isNotNull(LeaveRequest::getTimeoutTime)
+                        .le(LeaveRequest::getTimeoutTime, LocalDateTime.now()));
+
+        int count = 0;
+        for (LeaveRequest r : timedOut) {
+            try {
+                processTimeout(r);
+                count++;
+            } catch (Exception e) {
+                log.warn("timeout escalation failed for request {}: {}", r.getId(), e.getMessage());
+            }
+        }
+        return count;
+    }
+
+    private void processTimeout(LeaveRequest request) {
+        ApprovalNode node = approvalNodeMapper.selectById(request.getCurrentNodeId());
+        if (node == null || node.getTimeoutHours() == null) return;
+
+        String action = node.getTimeoutAction() != null ? node.getTimeoutAction() : "ESCALATE";
+
+        ApprovalRecord record = new ApprovalRecord();
+        record.setLeaveRequestId(request.getId());
+        record.setApproverId(0L);
+        record.setAction("TIMEOUT_" + action);
+        record.setComment("审批超时（" + node.getTimeoutHours() + "小时），自动处理: " + action);
+        record.setApprovalStep(request.getApprovalStep());
+        record.setNodeId(request.getCurrentNodeId());
+        approvalRecordMapper.insert(record);
+
+        switch (action) {
+            case "AUTO_APPROVE" -> {
+                skipPendingTasks(request.getId(), request.getCurrentNodeId());
+                request.setApprovalStep(request.getApprovalStep() + 1);
+                User applicant = userMapper.selectById(request.getApplicantId());
+                boolean hasNext = advanceToNextNode(request, applicant);
+                if (!hasNext) {
+                    request.setStatus("APPROVED");
+                    request.setCurrentApproverId(null);
+                    request.setCurrentNodeId(null);
+                    request.setTimeoutTime(null);
+                }
+                leaveRequestMapper.updateById(request);
+            }
+            case "AUTO_REJECT" -> {
+                skipPendingTasks(request.getId(), request.getCurrentNodeId());
+                request.setStatus("REJECTED");
+                request.setCurrentApproverId(null);
+                request.setCurrentNodeId(null);
+                request.setTimeoutTime(null);
+                leaveRequestMapper.updateById(request);
+            }
+            default -> { // ESCALATE
+                if (isParallel(node)) {
+                    skipPendingTasks(request.getId(), request.getCurrentNodeId());
+                    request.setApprovalStep(request.getApprovalStep() + 1);
+                    User applicant = userMapper.selectById(request.getApplicantId());
+                    boolean hasNext = advanceToNextNode(request, applicant);
+                    if (!hasNext) {
+                        request.setStatus("APPROVED");
+                        request.setCurrentApproverId(null);
+                        request.setCurrentNodeId(null);
+                        request.setTimeoutTime(null);
+                    }
+                } else {
+                    Long escalateTo = node.getEscalateToUserId();
+                    if (escalateTo != null) {
+                        request.setCurrentApproverId(escalateTo);
+                        request.setTimeoutTime(LocalDateTime.now().plusHours(node.getTimeoutHours()));
+                    } else {
+                        request.setApprovalStep(request.getApprovalStep() + 1);
+                        User applicant = userMapper.selectById(request.getApplicantId());
+                        boolean hasNext = advanceToNextNode(request, applicant);
+                        if (!hasNext) {
+                            request.setStatus("APPROVED");
+                            request.setCurrentApproverId(null);
+                            request.setCurrentNodeId(null);
+                            request.setTimeoutTime(null);
+                        }
+                    }
+                }
+                leaveRequestMapper.updateById(request);
+            }
+        }
+    }
+
+    private void skipPendingTasks(Long requestId, Long nodeId) {
+        if (nodeId != null) {
+            approvalTaskMapper.update(null,
+                    new LambdaUpdateWrapper<ApprovalTask>()
+                            .eq(ApprovalTask::getLeaveRequestId, requestId)
+                            .eq(ApprovalTask::getNodeId, nodeId)
+                            .eq(ApprovalTask::getStatus, "PENDING")
+                            .set(ApprovalTask::getStatus, "SKIPPED"));
+        }
     }
 
     // ========== 查询 ==========

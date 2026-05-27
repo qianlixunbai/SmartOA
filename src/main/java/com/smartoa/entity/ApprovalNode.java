@@ -41,6 +41,15 @@ public class ApprovalNode {
     @TableField("approver_ids")
     private String approverIds;
 
+    @TableField("timeout_hours")
+    private Integer timeoutHours;
+
+    @TableField("timeout_action")
+    private String timeoutAction;
+
+    @TableField("escalate_to_user_id")
+    private Long escalateToUserId;
+
     @TableField("create_time")
     private LocalDateTime createTime;
 
