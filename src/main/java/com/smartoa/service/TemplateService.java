@@ -1,11 +1,16 @@
 package com.smartoa.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.smartoa.entity.ApprovalNode;
+import com.smartoa.entity.ApprovalRecord;
 import com.smartoa.entity.ApprovalTemplate;
+import com.smartoa.entity.LeaveRequest;
 import com.smartoa.entity.TemplateField;
 import com.smartoa.mapper.ApprovalNodeMapper;
+import com.smartoa.mapper.ApprovalRecordMapper;
 import com.smartoa.mapper.ApprovalTemplateMapper;
+import com.smartoa.mapper.LeaveRequestMapper;
 import com.smartoa.mapper.TemplateFieldMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +27,8 @@ public class TemplateService {
     private final ApprovalTemplateMapper templateMapper;
     private final ApprovalNodeMapper approvalNodeMapper;
     private final TemplateFieldMapper templateFieldMapper;
+    private final ApprovalRecordMapper approvalRecordMapper;
+    private final LeaveRequestMapper leaveRequestMapper;
 
     // ========== 模板 CRUD ==========
 
@@ -70,10 +78,28 @@ public class TemplateService {
 
     @Transactional
     public void saveNodes(Long templateId, List<ApprovalNode> nodes) {
-        approvalNodeMapper.delete(new LambdaQueryWrapper<ApprovalNode>()
-                .eq(ApprovalNode::getTemplateId, templateId));
+        List<ApprovalNode> oldNodes = approvalNodeMapper.selectList(
+                new LambdaQueryWrapper<ApprovalNode>()
+                        .eq(ApprovalNode::getTemplateId, templateId));
+        List<Long> oldNodeIds = oldNodes.stream().map(ApprovalNode::getId).collect(Collectors.toList());
+
+        if (!oldNodeIds.isEmpty()) {
+            // 清除审批记录中对旧节点的引用
+            approvalRecordMapper.update(null,
+                    new LambdaUpdateWrapper<ApprovalRecord>()
+                            .in(ApprovalRecord::getNodeId, oldNodeIds)
+                            .set(ApprovalRecord::getNodeId, null));
+            // 清除请假单中对旧节点的引用
+            leaveRequestMapper.update(null,
+                    new LambdaUpdateWrapper<LeaveRequest>()
+                            .in(LeaveRequest::getCurrentNodeId, oldNodeIds)
+                            .set(LeaveRequest::getCurrentNodeId, null));
+            approvalNodeMapper.deleteByIds(oldNodeIds);
+        }
+
         for (int i = 0; i < nodes.size(); i++) {
             ApprovalNode node = nodes.get(i);
+            node.setId(null);
             node.setTemplateId(templateId);
             node.setSortOrder(i);
             node.setCreateTime(LocalDateTime.now());

@@ -48,7 +48,7 @@ onMounted(async () => {
     form.description = data.description
     form.enabled = data.enabled
     const serverNodes = await getTemplateNodes(Number(id))
-    nodes.value = serverNodes.map((n, i) => ({ ...n, _uid: ++i }))
+    nodes.value = serverNodes.map((n, i) => ({ ...n, _uid: ++i, _showCondition: !!n.conditionExpression }))
     uidCounter = nodes.value.length
   }
 })
@@ -61,7 +61,9 @@ function addNode() {
     nodeName: '新节点',
     sortOrder: nodes.value.length,
     approverType: 'DIRECT_LEADER',
-    approverId: null
+    approverId: null,
+    conditionExpression: null,
+    _showCondition: false
   })
 }
 
@@ -97,7 +99,7 @@ async function handleSave() {
     if (isEdit.value) {
       await updateTemplate(Number(route.params.id), data)
       // re-assign sortOrder before saving
-      const ordered = nodes.value.map(({ _uid, ...n }, i) => ({ ...n, sortOrder: i }))
+      const ordered = nodes.value.map(({ _uid, _showCondition, ...n }, i) => ({ ...n, sortOrder: i }))
       await saveTemplateNodes(Number(route.params.id), ordered)
       ElMessage.success('更新成功')
     } else {
@@ -215,6 +217,36 @@ async function handleSave() {
                     <span class="type-dot" :style="{ background: approverColors[node.approverType] }"></span>
                     {{ approverLabels[node.approverType] }}
                   </span>
+                </div>
+              </div>
+
+              <!-- 条件表达式 -->
+              <div class="condition-row">
+                <el-button
+                  v-if="!node._showCondition"
+                  link
+                  type="info"
+                  size="small"
+                  @click="node._showCondition = true"
+                >
+                  + 条件
+                </el-button>
+                <div v-else class="condition-input-area">
+                  <el-input
+                    v-model="node.conditionExpression"
+                    placeholder="如: days > 3 或 leaveType == '病假'"
+                    size="small"
+                    class="condition-input"
+                    clearable
+                  />
+                  <el-button
+                    link
+                    type="info"
+                    size="small"
+                    @click="node._showCondition = false; node.conditionExpression = null"
+                  >
+                    移除
+                  </el-button>
                 </div>
               </div>
 
@@ -386,6 +418,21 @@ async function handleSave() {
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+/* ── 条件表达式 ── */
+.condition-row {
+  margin-top: 6px;
+}
+
+.condition-input-area {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.condition-input {
+  width: 280px;
 }
 
 /* ── 删除按钮 ── */
