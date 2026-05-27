@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getTemplateById, createTemplate, updateTemplate, getTemplateNodes, saveTemplateNodes } from '@/api/template'
 import { useUserStore } from '@/stores/users'
-import { APPROVER_TYPES } from '@/utils/constants'
+import { APPROVER_TYPES, SIGN_TYPES } from '@/utils/constants'
 
 const route = useRoute()
 const router = useRouter()
@@ -48,7 +48,12 @@ onMounted(async () => {
     form.description = data.description
     form.enabled = data.enabled
     const serverNodes = await getTemplateNodes(Number(id))
-    nodes.value = serverNodes.map((n, i) => ({ ...n, _uid: ++i, _showCondition: !!n.conditionExpression }))
+    nodes.value = serverNodes.map((n, i) => ({
+      ...n,
+      _uid: ++i,
+      _showCondition: !!n.conditionExpression,
+      _approverIdsArr: n.approverIds ? n.approverIds.split(',').map(Number) : []
+    }))
     uidCounter = nodes.value.length
   }
 })
@@ -62,8 +67,11 @@ function addNode() {
     sortOrder: nodes.value.length,
     approverType: 'DIRECT_LEADER',
     approverId: null,
+    signType: 'SINGLE',
+    approverIds: null,
     conditionExpression: null,
-    _showCondition: false
+    _showCondition: false,
+    _approverIdsArr: []
   })
 }
 
@@ -99,7 +107,11 @@ async function handleSave() {
     if (isEdit.value) {
       await updateTemplate(Number(route.params.id), data)
       // re-assign sortOrder before saving
-      const ordered = nodes.value.map(({ _uid, _showCondition, ...n }, i) => ({ ...n, sortOrder: i }))
+      const ordered = nodes.value.map(({ _uid, _showCondition, _approverIdsArr, ...n }, i) => ({
+        ...n,
+        sortOrder: i,
+        approverIds: Array.isArray(_approverIdsArr) && _approverIdsArr.length > 0 ? _approverIdsArr.join(',') : null
+      }))
       await saveTemplateNodes(Number(route.params.id), ordered)
       ElMessage.success('更新成功')
     } else {
@@ -190,21 +202,52 @@ async function handleSave() {
                     class="node-name-input"
                   />
                   <el-select
-                    v-model="node.approverType"
-                    class="approver-type-select"
+                    v-model="node.signType"
+                    class="sign-type-select"
                   >
                     <el-option
-                      v-for="at in APPROVER_TYPES"
-                      :key="at.value"
-                      :label="at.label"
-                      :value="at.value"
+                      v-for="st in SIGN_TYPES"
+                      :key="st.value"
+                      :label="st.label"
+                      :value="st.value"
                     />
                   </el-select>
+                  <template v-if="node.signType === 'SINGLE'">
+                    <el-select
+                      v-model="node.approverType"
+                      class="approver-type-select"
+                    >
+                      <el-option
+                        v-for="at in APPROVER_TYPES"
+                        :key="at.value"
+                        :label="at.label"
+                        :value="at.value"
+                      />
+                    </el-select>
+                    <el-select
+                      v-if="node.approverType === 'SPECIFIC_USER'"
+                      v-model="node.approverId"
+                      placeholder="选择用户"
+                      class="user-select"
+                    >
+                      <el-option
+                        v-for="u in userStore.users"
+                        :key="u.id"
+                        :label="u.realName"
+                        :value="u.id"
+                      />
+                    </el-select>
+                    <span class="approver-label" :style="{ color: approverColors[node.approverType] }">
+                      <span class="type-dot" :style="{ background: approverColors[node.approverType] }"></span>
+                      {{ approverLabels[node.approverType] }}
+                    </span>
+                  </template>
                   <el-select
-                    v-if="node.approverType === 'SPECIFIC_USER'"
-                    v-model="node.approverId"
-                    placeholder="选择用户"
-                    class="user-select"
+                    v-else
+                    v-model="node._approverIdsArr"
+                    multiple
+                    placeholder="选择审批人"
+                    class="user-select-multi"
                   >
                     <el-option
                       v-for="u in userStore.users"
@@ -213,10 +256,6 @@ async function handleSave() {
                       :value="u.id"
                     />
                   </el-select>
-                  <span class="approver-label" :style="{ color: approverColors[node.approverType] }">
-                    <span class="type-dot" :style="{ background: approverColors[node.approverType] }"></span>
-                    {{ approverLabels[node.approverType] }}
-                  </span>
                 </div>
               </div>
 
@@ -401,8 +440,16 @@ async function handleSave() {
   width: 130px;
 }
 
+.sign-type-select {
+  width: 170px;
+}
+
 .user-select {
   width: 150px;
+}
+
+.user-select-multi {
+  width: 250px;
 }
 
 .approver-label {

@@ -20,4 +20,10 @@ export const APPROVER_TYPES = [
   { value: 'SPECIFIC_USER', label: '指定用户' }
 ]
 
+export const SIGN_TYPES = [
+  { value: 'SINGLE', label: '单人审批' },
+  { value: 'COUNTER_SIGN', label: '会签（全部同意）' },
+  { value: 'OR_SIGN', label: '或签（任一同意）' }
+]
+
 export const STEP_LABELS = ['直属领导审批', '部门总监审批', '完成']

@@ -9,6 +9,7 @@ export const useApprovalStore = defineStore('approval', () => {
   const doneRequests = ref([])
   const currentDetail = ref(null)
   const currentRecords = ref([])
+  const currentTasks = ref([])
   const loading = ref(false)
 
   async function fetchAllRequests() {
@@ -35,6 +36,10 @@ export const useApprovalStore = defineStore('approval', () => {
     currentRecords.value = await leaveApi.getApprovalRecords(id)
   }
 
+  async function fetchTasks(id) {
+    currentTasks.value = await leaveApi.getPendingTasks(id)
+  }
+
   async function submitLeave(formData) {
     await leaveApi.submitLeave(formData)
     await fetchMyRequests()
@@ -46,8 +51,8 @@ export const useApprovalStore = defineStore('approval', () => {
 
   return {
     allRequests, myRequests, pendingRequests, doneRequests,
-    currentDetail, currentRecords, loading,
+    currentDetail, currentRecords, currentTasks, loading,
     fetchAllRequests, fetchMyRequests, fetchPendingRequests, fetchDoneRequests,
-    fetchDetail, fetchRecords, submitLeave, approve
+    fetchDetail, fetchRecords, fetchTasks, submitLeave, approve
   }
 })

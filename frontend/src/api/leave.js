@@ -43,3 +43,7 @@ export function withdrawLeave(id) {
 export function transferLeave(id, toUserId) {
   return api.post(`/leave/${id}/transfer`, { toUserId })
 }
+
+export function getPendingTasks(id) {
+  return api.get(`/leave/${id}/tasks`)
+}

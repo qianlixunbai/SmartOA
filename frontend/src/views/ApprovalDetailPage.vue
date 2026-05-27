@@ -8,7 +8,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useApprovalStore } from '@/stores/approval'
 import { useUserStore } from '@/stores/users'
 import { getTemplateNodes } from '@/api/template'
-import { transferLeave } from '@/api/leave'
+import { transferLeave, getPendingTasks } from '@/api/leave'
 
 const route = useRoute()
 const router = useRouter()
@@ -19,6 +19,7 @@ const userStore = useUserStore()
 const comment = ref('')
 const submitting = ref(false)
 const nodes = ref([])
+const tasks = ref([])
 const transferUserId = ref(null)
 const showTransfer = ref(false)
 
@@ -29,7 +30,13 @@ const applicant = computed(() => userStore.getUser(detail.value?.applicantId))
 
 const canApprove = computed(() => {
   if (!detail.value) return false
-  return detail.value.status === 'PENDING' && detail.value.currentApproverId === auth.user?.id
+  if (detail.value.status !== 'PENDING') return false
+  if (detail.value.currentApproverId === auth.user?.id) return true
+  return tasks.value.some(t => t.approverId === auth.user?.id)
+})
+
+const pendingApproverNames = computed(() => {
+  return tasks.value.map(t => userStore.getUser(t.approverId)?.realName || `用户${t.approverId}`)
 })
 
 const canWithdraw = computed(() => {
@@ -122,6 +129,7 @@ function formatDate(dateStr) {
 onMounted(async () => {
   await userStore.fetchUsers()
   await Promise.all([store.fetchDetail(id.value), store.fetchRecords(id.value)])
+  tasks.value = await getPendingTasks(id.value).catch(() => [])
   if (store.currentDetail?.templateId) {
     nodes.value = await getTemplateNodes(store.currentDetail.templateId)
   }
@@ -161,6 +169,14 @@ onMounted(async () => {
         <el-descriptions-item label="请假原因" :span="2">{{ detail?.reason }}</el-descriptions-item>
         <el-descriptions-item label="提交时间" :span="2">{{ formatDate(detail?.createTime) }}</el-descriptions-item>
       </el-descriptions>
+    </el-card>
+
+    <!-- 并行审批待办提示 -->
+    <el-card v-if="pendingApproverNames.length > 0" shadow="never" class="mb-20">
+      <template #header><span>当前审批人</span></template>
+      <div class="approver-tags">
+        <el-tag v-for="name in pendingApproverNames" :key="name" type="warning" class="mr-8">{{ name }}</el-tag>
+      </div>
     </el-card>
 
     <!-- 审批操作 -->
@@ -224,4 +240,5 @@ onMounted(async () => {
 .card-header { display: flex; justify-content: space-between; align-items: center; }
 .action-row { display: flex; justify-content: space-between; align-items: center; }
 .approve-actions { display: flex; gap: 12px; }
+.approver-tags { display: flex; flex-wrap: wrap; gap: 8px; }
 </style>

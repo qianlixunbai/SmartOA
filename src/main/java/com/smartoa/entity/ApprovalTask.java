@@ -11,35 +11,23 @@ import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
-@TableName("approval_node")
-public class ApprovalNode {
+@TableName("approval_task")
+public class ApprovalTask {
 
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    @TableField("template_id")
-    private Long templateId;
+    @TableField("leave_request_id")
+    private Long leaveRequestId;
 
-    @TableField("node_name")
-    private String nodeName;
-
-    @TableField("sort_order")
-    private Integer sortOrder;
-
-    @TableField("approver_type")
-    private String approverType;
+    @TableField("node_id")
+    private Long nodeId;
 
     @TableField("approver_id")
     private Long approverId;
 
-    @TableField("condition_expression")
-    private String conditionExpression;
-
-    @TableField("sign_type")
-    private String signType;
-
-    @TableField("approver_ids")
-    private String approverIds;
+    @TableField("status")
+    private String status;
 
     @TableField("create_time")
     private LocalDateTime createTime;

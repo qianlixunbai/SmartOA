@@ -4,6 +4,7 @@ import com.smartoa.common.BusinessException;
 import com.smartoa.common.Result;
 import com.smartoa.dto.LeaveSubmitRequest;
 import com.smartoa.entity.ApprovalRecord;
+import com.smartoa.entity.ApprovalTask;
 import com.smartoa.entity.LeaveRequest;
 import com.smartoa.entity.User;
 import com.smartoa.service.LeaveService;
@@ -109,5 +110,10 @@ public class LeaveController {
     @GetMapping("/api/leave/{id}/records")
     public Result<List<ApprovalRecord>> getApprovalRecords(@PathVariable Long id) {
         return Result.success(leaveService.getApprovalRecords(id));
+    }
+
+    @GetMapping("/api/leave/{id}/tasks")
+    public Result<List<ApprovalTask>> getPendingTasks(@PathVariable Long id) {
+        return Result.success(leaveService.getPendingTasks(id));
     }
 }
