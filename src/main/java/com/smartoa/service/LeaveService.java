@@ -212,6 +212,12 @@ public class LeaveService {
 
     // ========== 查询 ==========
 
+    /** 管理画面用 — 全件取得（ロールによる制御は Controller で実施） */
+    public List<LeaveRequest> getAllRequests() {
+        return leaveRequestMapper.selectList(new LambdaQueryWrapper<LeaveRequest>()
+                .orderByDesc(LeaveRequest::getCreateTime));
+    }
+
     public List<LeaveRequest> getMyRequests(Long applicantId) {
         return leaveRequestMapper.selectList(new LambdaQueryWrapper<LeaveRequest>()
                 .eq(LeaveRequest::getApplicantId, applicantId)

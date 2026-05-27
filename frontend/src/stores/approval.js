@@ -3,12 +3,17 @@ import { ref } from 'vue'
 import * as leaveApi from '@/api/leave'
 
 export const useApprovalStore = defineStore('approval', () => {
+  const allRequests = ref([])
   const myRequests = ref([])
   const pendingRequests = ref([])
   const doneRequests = ref([])
   const currentDetail = ref(null)
   const currentRecords = ref([])
   const loading = ref(false)
+
+  async function fetchAllRequests() {
+    allRequests.value = await leaveApi.getAllRequests()
+  }
 
   async function fetchMyRequests() {
     myRequests.value = await leaveApi.getMyRequests()
@@ -40,9 +45,9 @@ export const useApprovalStore = defineStore('approval', () => {
   }
 
   return {
-    myRequests, pendingRequests, doneRequests,
+    allRequests, myRequests, pendingRequests, doneRequests,
     currentDetail, currentRecords, loading,
-    fetchMyRequests, fetchPendingRequests, fetchDoneRequests,
+    fetchAllRequests, fetchMyRequests, fetchPendingRequests, fetchDoneRequests,
     fetchDetail, fetchRecords, submitLeave, approve
   }
 })

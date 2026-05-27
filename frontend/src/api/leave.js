@@ -8,6 +8,10 @@ export function approveLeave(requestId, action, comment) {
   return api.post('/leave/approve', { requestId, action, comment })
 }
 
+export function getAllRequests() {
+  return api.get('/leave/all')
+}
+
 export function getMyRequests() {
   return api.get('/leave/my-requests')
 }

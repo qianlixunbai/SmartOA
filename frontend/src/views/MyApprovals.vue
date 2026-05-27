@@ -10,7 +10,7 @@ const auth = useAuthStore()
 const store = useApprovalStore()
 const userStore = useUserStore()
 const router = useRouter()
-const activeTab = ref(auth.isManager ? 'pending' : 'my')
+const activeTab = ref(auth.isManager ? 'all' : 'my')
 
 const pendingColumns = [
   { prop: 'applicantId', label: '申请人', width: 100, isUser: true },
@@ -44,6 +44,7 @@ onMounted(async () => {
   await userStore.fetchUsers()
   store.fetchMyRequests()
   if (auth.isManager) {
+    store.fetchAllRequests()
     store.fetchPendingRequests()
     store.fetchDoneRequests()
   }
@@ -54,6 +55,14 @@ onMounted(async () => {
   <div class="page">
     <el-card shadow="never">
       <el-tabs v-model="activeTab">
+        <el-tab-pane v-if="auth.isManager" label="全部申请" name="all">
+          <LeaveTable
+            :data="store.allRequests"
+            :show-actions="true"
+            action-type="view"
+            @action="handleView"
+          />
+        </el-tab-pane>
         <el-tab-pane v-if="auth.isManager" label="待审批" name="pending">
           <LeaveTable
             :data="store.pendingRequests"

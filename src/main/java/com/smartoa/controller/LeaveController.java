@@ -86,6 +86,16 @@ public class LeaveController {
         }
     }
 
+    /** 管理者用 — 全ユーザーの申請を一覧表示 */
+    @GetMapping("/api/leave/all")
+    public List<LeaveRequest> getAllRequests() {
+        User user = userService.getLoginUser();
+        if (user == null || !"MANAGER".equals(user.getRole())) {
+            throw new RuntimeException("管理者権限が必要です");
+        }
+        return leaveService.getAllRequests();
+    }
+
     @GetMapping("/api/leave/my-requests")
     public List<LeaveRequest> getMyRequests() {
         User user = userService.getLoginUser();
