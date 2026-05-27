@@ -4,25 +4,6 @@ Spring Boot + Vue 3 + MyBatis-Plus，聚焦请假审批流程。
 
 ---
 
-## 关于用户
-
-- 大三学生，Java 学习中，目标赴日就职（富士通等日企）
-- 主攻技术栈：Spring Boot + Java + MySQL，同时准备 N2 考试
-- 开发工具：IntelliJ IDEA 2024.3、VS Code、Cursor
-- C 盘 146GB，Android SDK 在 D:\android
-- Claude Code 通过 DeepSeek API 后端运行（配置在 `C:\Users\28421\.claude\settings.json`）
-
-## 交流方式（重要）
-
-1. **始终用中文**交流
-2. 讲解代码时**详细解释逻辑和底层原理**
-3. 主动关联**日企面试考点**（Java 基础、Spring Boot 常见问题、SQL 优化、设计模式等）
-4. 先中文详解，再用**日语总结**（标注罗马音）
-5. 写代码时**注释用日文**，遵循日企严谨编码风格（命名清晰、禁止魔法数字等）
-6. 日语格式：`日本語（にほんご / nihongo）`，汉字后跟假名+罗马字
-
----
-
 ## 技术栈
 
 - 后端：Spring Boot 4.0.6 + Java 21 + MyBatis-Plus + MySQL
