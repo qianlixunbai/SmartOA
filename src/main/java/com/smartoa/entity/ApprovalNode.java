@@ -32,6 +32,9 @@ public class ApprovalNode {
     @TableField("approver_id")
     private Long approverId;
 
+    @TableField("condition_expression")
+    private String conditionExpression;
+
     @TableField("create_time")
     private LocalDateTime createTime;
 

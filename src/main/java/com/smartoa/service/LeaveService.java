@@ -11,11 +11,16 @@ import com.smartoa.mapper.ApprovalRecordMapper;
 import com.smartoa.mapper.LeaveRequestMapper;
 import com.smartoa.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LeaveService {
@@ -95,8 +100,9 @@ public class LeaveService {
     }
 
     /**
-     * 查找当前节点的下一个顺序节点并解析审批人。
-     * 返回 true 表示找到下一节点，false 表示审批流程结束。
+     * 查找当前节点之后第一个满足条件的节点并解析审批人。
+     * 节点条件表达式为 null/空 或 SpEL 评估为 true 时进入，
+     * 否则跳过继续搜索下一个。返回 true 表示找到，false 表示流程结束。
      */
     private boolean advanceToNextNode(LeaveRequest request, User applicant) {
         Long currentNodeId = request.getCurrentNodeId();
@@ -111,29 +117,59 @@ public class LeaveService {
             return false;
         }
 
-        ApprovalNode nextNode;
-        if (currentNodeId == null) {
-            // 刚提交，取第一个节点
-            nextNode = nodes.get(0);
-        } else {
-            // 找当前节点之后的节点
-            int currentIndex = -1;
+        // 确定搜索起始位置
+        int startIndex = 0;
+        if (currentNodeId != null) {
             for (int i = 0; i < nodes.size(); i++) {
                 if (nodes.get(i).getId().equals(currentNodeId)) {
-                    currentIndex = i;
+                    startIndex = i + 1;
                     break;
                 }
             }
-            if (currentIndex < 0 || currentIndex >= nodes.size() - 1) {
-                return false; // 没有下一节点了
-            }
-            nextNode = nodes.get(currentIndex + 1);
         }
 
-        Long nextApproverId = resolveApprover(nextNode, applicant);
-        request.setCurrentNodeId(nextNode.getId());
-        request.setCurrentApproverId(nextApproverId);
-        return true;
+        // 从起始位置向后搜索，跳过条件不满足的节点
+        for (int i = startIndex; i < nodes.size(); i++) {
+            ApprovalNode node = nodes.get(i);
+            if (evaluateCondition(node.getConditionExpression(), request)) {
+                Long nextApproverId = resolveApprover(node, applicant);
+                request.setCurrentNodeId(node.getId());
+                request.setCurrentApproverId(nextApproverId);
+                return true;
+            }
+        }
+
+        return false; // 没有符合条件的下一节点
+    }
+
+    /**
+     * 评估节点的 SpEL 条件表达式。null/空 → 始终进入。
+     * 表达式异常时默认进入（fail-open），避免审批卡死。
+     */
+    /**
+     * SpEL 条件变量载体 — 作为 root object，让表达式可直接用 days、leaveType 等字段名。
+     */
+    public record ConditionVars(String leaveType, long days,
+                                 java.time.LocalDate startDate, java.time.LocalDate endDate) {}
+
+    private boolean evaluateCondition(String expression, LeaveRequest request) {
+        if (expression == null || expression.isBlank()) {
+            return true;
+        }
+        try {
+            long days = ChronoUnit.DAYS.between(request.getStartDate(), request.getEndDate()) + 1;
+            ConditionVars vars = new ConditionVars(
+                    request.getLeaveType(), days,
+                    request.getStartDate(), request.getEndDate());
+            StandardEvaluationContext ctx = new StandardEvaluationContext(vars);
+            Boolean result = new SpelExpressionParser()
+                    .parseExpression(expression).getValue(ctx, Boolean.class);
+            log.debug("condition eval: expr='{}' days={} leaveType={} => {}", expression, days, request.getLeaveType(), result);
+            return Boolean.TRUE.equals(result);
+        } catch (Exception e) {
+            log.warn("condition eval error: expr='{}' — {}", expression, e.getMessage());
+            return true;
+        }
     }
 
     /**
