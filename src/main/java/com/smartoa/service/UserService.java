@@ -1,10 +1,12 @@
 package com.smartoa.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.smartoa.common.BusinessException;
 import com.smartoa.config.UserContextHolder;
 import com.smartoa.entity.User;
 import com.smartoa.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,14 +16,18 @@ import java.util.List;
 public class UserService {
 
     private final UserMapper userMapper;
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public User login(String username, String password) {
         User user = userMapper.selectOne(new LambdaQueryWrapper<User>()
                 .eq(User::getUsername, username));
-        if (user != null && user.getPassword().equals(password)) {
-            return user;
+        if (user == null) {
+            throw new BusinessException(1002, "用户名或密码错误");
         }
-        return null;
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new BusinessException(1002, "用户名或密码错误");
+        }
+        return user;
     }
 
     public User getLoginUser() {

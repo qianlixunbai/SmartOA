@@ -5,7 +5,7 @@ const routes = [
   {
     path: '/login',
     name: 'Login',
-    component: () => import('@/views/Login.vue'),
+    component: () => import('@/views/LoginPage.vue'),
     meta: { layout: 'auth', guest: true, title: '登录' }
   },
   {
@@ -15,38 +15,44 @@ const routes = [
   {
     path: '/submit-application',
     name: 'SubmitApplication',
-    component: () => import('@/views/SubmitApplication.vue'),
+    component: () => import('@/views/SubmitApplicationPage.vue'),
     meta: { title: '提交申请', requiresAuth: true }
   },
   {
     path: '/my-approvals',
     name: 'MyApprovals',
-    component: () => import('@/views/MyApprovals.vue'),
+    component: () => import('@/views/MyApprovalsPage.vue'),
     meta: { title: '我的审批', requiresAuth: true }
   },
   {
     path: '/approval/:id',
     name: 'ApprovalDetail',
-    component: () => import('@/views/ApprovalDetail.vue'),
+    component: () => import('@/views/ApprovalDetailPage.vue'),
     meta: { title: '审批详情', requiresAuth: true }
   },
   {
     path: '/templates',
     name: 'TemplateList',
-    component: () => import('@/views/TemplateList.vue'),
+    component: () => import('@/views/TemplateListPage.vue'),
     meta: { title: '审批模板', requiresAuth: true, role: 'MANAGER' }
   },
   {
     path: '/templates/edit/:id?',
     name: 'TemplateEdit',
-    component: () => import('@/views/TemplateEdit.vue'),
+    component: () => import('@/views/TemplateEditPage.vue'),
     meta: { title: '编辑模板', requiresAuth: true, role: 'MANAGER' }
   },
   {
     path: '/stats',
     name: 'Stats',
-    component: () => import('@/views/Stats.vue'),
+    component: () => import('@/views/StatsPage.vue'),
     meta: { title: '统计报表', requiresAuth: true }
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: () => import('@/views/NotFoundPage.vue'),
+    meta: { title: '404' }
   }
 ]
 

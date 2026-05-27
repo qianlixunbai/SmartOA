@@ -20,7 +20,21 @@ service.interceptors.request.use(
 )
 
 service.interceptors.response.use(
-  response => response.data,
+  response => {
+    const res = response.data
+    if (res.code === 200) {
+      return res.data
+    }
+    if (res.code === 401) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      router.push('/login')
+      ElMessage.error(res.message || '未登录')
+      return Promise.reject(new Error(res.message))
+    }
+    ElMessage.error(res.message || '请求失败')
+    return Promise.reject(new Error(res.message))
+  },
   error => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token')
