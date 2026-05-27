@@ -86,6 +86,13 @@ public class LeaveController {
         }
     }
 
+    /** 修復 — 滞留申請（currentApproverId が null の PENDING 申請）を再割り当て */
+    @PostMapping("/api/leave/repair")
+    public Map<String, Object> repairStuckRequests() {
+        int count = leaveService.repairStuckRequests();
+        return Map.of("success", true, "message", "已修复 " + count + " 条滞留申请");
+    }
+
     /** 管理者用 — 全ユーザーの申請を一覧表示 */
     @GetMapping("/api/leave/all")
     public List<LeaveRequest> getAllRequests() {

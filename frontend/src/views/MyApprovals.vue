@@ -2,9 +2,11 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import LeaveTable from '@/components/LeaveTable.vue'
+import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useApprovalStore } from '@/stores/approval'
 import { useUserStore } from '@/stores/users'
+import { repairStuckRequests } from '@/api/leave'
 
 const auth = useAuthStore()
 const store = useApprovalStore()
@@ -36,6 +38,21 @@ function handleApprove(id) {
   router.push(`/approval/${id}`)
 }
 
+const repairing = ref(false)
+async function handleRepair() {
+  repairing.value = true
+  try {
+    const res = await repairStuckRequests()
+    ElMessage.success(res.message)
+    store.fetchAllRequests()
+    store.fetchPendingRequests()
+  } catch {
+    // handled by interceptor
+  } finally {
+    repairing.value = false
+  }
+}
+
 function handleView(id) {
   router.push(`/approval/${id}`)
 }
@@ -54,6 +71,12 @@ onMounted(async () => {
 <template>
   <div class="page">
     <el-card shadow="never">
+      <div v-if="auth.isManager" style="margin-bottom: 12px">
+        <el-button type="warning" size="small" :loading="repairing" @click="handleRepair">
+          修复滞留申请
+        </el-button>
+        <span style="margin-left: 8px; color: #909399; font-size: 13px">重新分配卡住的审批单</span>
+      </div>
       <el-tabs v-model="activeTab">
         <el-tab-pane v-if="auth.isManager" label="全部申请" name="all">
           <LeaveTable

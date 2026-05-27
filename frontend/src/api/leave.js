@@ -12,6 +12,10 @@ export function getAllRequests() {
   return api.get('/leave/all')
 }
 
+export function repairStuckRequests() {
+  return api.post('/leave/repair')
+}
+
 export function getMyRequests() {
   return api.get('/leave/my-requests')
 }
