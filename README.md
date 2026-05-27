@@ -189,3 +189,199 @@ pnpm run dev
 ## 许可证
 
 MIT License
+
+---
+
+---
+
+# SmartOA — シンプル OA 承認ワークフロー管理システム
+
+> エンタープライズ OA 承認ワークフロー管理システム（P2 完了版） | Spring Boot 4 + Vue 3 + MyBatis-Plus + JWT
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Java-21-orange" alt="Java 21"/>
+  <img src="https://img.shields.io/badge/Spring_Boot-4.0.6-brightgreen" alt="Spring Boot 4"/>
+  <img src="https://img.shields.io/badge/Vue-3-4FC08D" alt="Vue 3"/>
+  <img src="https://img.shields.io/badge/MySQL-8.0-blue" alt="MySQL 8"/>
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="License"/>
+</p>
+
+---
+
+## プロジェクト概要
+
+SmartOA は、企業の日常業務向けの**シンプルな承認ワークフロー管理システム**です。JWT 認証、承認テンプレート管理、休暇申請と多段階承認フローをサポートします。コア設計は「テンプレート設定 + フローエンジン」を中心に展開され、条件分岐、並行承認（カウンターサイン/オアサイン）、タイムアウト自動エスカレーションなどの高度な機能を備えています。
+
+---
+
+## 技術スタック
+
+| レイヤー | 技術 |
+|----------|------|
+| バックエンド | Spring Boot 4.0.6 |
+| 永続化 | MyBatis-Plus 3.5.16 |
+| データベース | MySQL 8.0 |
+| 認証 | JWT（jjwt 0.13.0）+ BCrypt |
+| フロントエンド | Vue 3.5（Composition API） |
+| UI ライブラリ | Element Plus 2.14 |
+| ビルドツール | Vite 8 |
+| パッケージ管理 | pnpm |
+| 状態管理 | Pinia |
+| ルーティング | Vue Router 4 |
+
+---
+
+## プロジェクト構成
+
+```
+smartoa/
+├── src/main/java/com/smartoa/
+│   ├── common/              # Result<T> 統一レスポンス、BusinessException、GlobalExceptionHandler
+│   ├── config/              # セキュリティ設定、CORS、JWT フィルター
+│   ├── controller/          # REST コントローラー（4 ファイル）
+│   ├── dto/                 # データ転送オブジェクト
+│   ├── entity/              # エンティティクラス（7 ファイル、ApprovalTask 含む）
+│   ├── mapper/              # MyBatis-Plus Mapper（7 ファイル）
+│   └── service/             # ビジネスロジック層（5 ファイル）+ TimeoutScheduler
+├── src/main/resources/
+│   └── application.properties
+├── frontend/                # Vue 3 フロントエンド
+│   └── src/
+│       ├── api/             # API クライアント（auth / leave / template）
+│       ├── stores/          # Pinia 状態管理（auth / approval / users）
+│       ├── router/          # ルーティング設定
+│       ├── views/           # ページコンポーネント（8 ページ）
+│       ├── components/      # 共有コンポーネント（StatusTag / ApprovalTimeline）
+│       └── layouts/         # レイアウトコンポーネント（MainLayout）
+├── docs/
+│   ├── mysql-p0-upgrade.sql  # テーブル作成 + シードデータ
+│   ├── mysql-p3-bcrypt.sql   # BCrypt パスワード移行
+│   ├── mysql-p4-parallel.sql # 並行承認
+│   └── mysql-p5-timeout.sql  # タイムアウト自動エスカレーション
+└── pom.xml
+```
+
+---
+
+## データベース設計
+
+| テーブル | 説明 |
+|----------|------|
+| `sys_user` | ユーザーテーブル（直属上司・部門ディレクターの関連付けを含む） |
+| `approval_template` | 承認テンプレートテーブル |
+| `approval_node` | 承認ノードテーブル（条件式、サイン種別、タイムアウト設定対応） |
+| `template_field` | テンプレートフィールドテーブル |
+| `leave_request` | 休暇申請テーブル（current_node_id + timeout_time でフロー制御） |
+| `approval_record` | 承認記録テーブル |
+| `approval_task` | 並行承認タスクテーブル（カウンターサイン/オアサインモード時の各承認者状態） |
+
+---
+
+## クイックスタート
+
+### 環境要件
+
+- Java 21+
+- MySQL 8.0+
+- Node.js 18+ / pnpm
+- Maven 3.8+
+
+### 1. データベース作成
+
+```sql
+CREATE DATABASE smartoa DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+続いて `docs/` 以下の SQL スクリプトを順にインポートします。
+
+### 2. バックエンド起動
+
+```bash
+./mvnw spring-boot:run
+```
+
+デフォルトポート：`8080`。
+
+### 3. フロントエンド起動
+
+```bash
+cd frontend
+pnpm install
+pnpm run dev
+```
+
+デフォルトポート：`5173`。バックエンドへのプロキシ転送が設定済みです。
+
+### 4. ログイン
+
+ブラウザで `http://localhost:5173` を開き、以下のアカウントでログインしてください：
+
+| ユーザー名 | パスワード | 役割 | 備考 |
+|------------|------------|------|------|
+| admin | 123456 | MANAGER | 技術部マネージャー |
+| zhangsan | 123456 | EMPLOYEE | 一般社員 |
+
+---
+
+## 実装済み機能
+
+### P0 基本機能
+
+- [x] ユーザーログイン（JWT + BCrypt + ロール区別）
+- [x] 承認テンプレート CRUD
+- [x] 休暇申請の提出
+- [x] ハードコード二段階承認フロー
+- [x] 保留中 / 完了 / 自分の提出タスク管理
+- [x] 承認詳細ページ
+
+### P1 アップグレード機能
+
+- [x] 8 テーブルデータベース設計
+- [x] 設定可能な多段階承認エンジン（approval_node テーブル駆動、動的ノード巡回）
+- [x] 承認 / 却下 / 取り消し / 転送の 4 アクション
+- [x] 承認ノード設定 UI（テンプレート編集時に追加・削除・ドラッグ＆ドロップ並べ替え可能）
+- [x] フロー進捗バー（`el-steps`、動的ノード状態）
+- [x] 承認履歴タイムライン（`el-timeline`、操作タイプを色分け）
+- [x] ECharts 統計チャート
+- [x] バックエンド Excel エクスポート（Apache POI）
+- [x] `Result<T>` 統一レスポンス + BusinessException グローバル例外処理
+
+### P2 アップグレード機能
+
+- [x] **フローノードビジュアルエディタ** — ドラッグ＆ドロップ並べ替え、動的ノード追加/削除
+- [x] **条件分岐** — SpEL 式駆動（休暇日数 `days`、休暇種類 `leaveType` などの条件で分岐）
+- [x] **並行承認** — 単人（SINGLE）/ カウンターサイン（COUNTER_SIGN）/ オアサイン（OR_SIGN）の 3 種別
+- [x] **タイムアウト自動エスカレーション** — ESCALATE（転送）/ AUTO_APPROVE（自動承認）/ AUTO_REJECT（自動却下）、`@Scheduled` で 5 分毎にチェック
+- [x] **滞留修復** — `repairStuckRequests()` で `currentApproverId` が null の異常滞留申請を修復
+
+---
+
+## API 概要
+
+| メソッド | パス | 説明 |
+|----------|------|------|
+| POST | `/api/login` | ログイン |
+| GET | `/api/users` | ユーザー一覧 |
+| GET | `/api/templates` | テンプレート一覧 |
+| POST | `/api/templates` | テンプレート作成 |
+| GET | `/api/templates/{id}/nodes` | 承認ノード取得 |
+| POST | `/api/templates/{id}/nodes` | 承認ノード保存 |
+| POST | `/api/leave/submit` | 休暇申請提出 |
+| POST | `/api/leave/approve` | 休暇承認 |
+| POST | `/api/leave/{id}/withdraw` | 申請取り消し |
+| POST | `/api/leave/{id}/transfer` | 承認転送 |
+| GET | `/api/leave/pending` | 保留中一覧 |
+| GET | `/api/leave/done` | 処理済み一覧 |
+| GET | `/api/leave/my-requests` | 自分の申請 |
+| GET | `/api/leave/{id}` | 申請詳細 |
+| GET | `/api/leave/{id}/records` | 承認記録 |
+| GET | `/api/leave/{id}/tasks` | 並行承認タスク |
+| POST | `/api/leave/repair` | 滞留修復 |
+| GET | `/api/stats/summary` | 統計サマリー |
+| GET | `/api/stats/export` | Excel エクスポート |
+
+---
+
+## ライセンス
+
+MIT License
