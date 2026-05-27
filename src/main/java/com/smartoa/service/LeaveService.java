@@ -210,6 +210,28 @@ public class LeaveService {
         leaveRequestMapper.updateById(request);
     }
 
+    // ========== 滞留修復 ==========
+
+    /** 审批节点配置晚于数据提交时，已提交申请的 currentApproverId 为 null，无法审批。
+     *  扫描所有 PENDING 且 currentApproverId 为 null 的申请，重新走一次节点分配。 */
+    @Transactional
+    public int repairStuckRequests() {
+        List<LeaveRequest> stuck = leaveRequestMapper.selectList(
+                new LambdaQueryWrapper<LeaveRequest>()
+                        .eq(LeaveRequest::getStatus, "PENDING")
+                        .isNull(LeaveRequest::getCurrentApproverId));
+
+        for (LeaveRequest r : stuck) {
+            User applicant = userMapper.selectById(r.getApplicantId());
+            if (applicant == null) continue;
+            r.setApprovalStep(0);
+            r.setCurrentNodeId(null);
+            advanceToNextNode(r, applicant);
+            leaveRequestMapper.updateById(r);
+        }
+        return stuck.size();
+    }
+
     // ========== 查询 ==========
 
     /** 管理画面用 — 全件取得（ロールによる制御は Controller で実施） */
