@@ -2,6 +2,7 @@ package com.smartoa.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.smartoa.common.BusinessException;
 import com.smartoa.entity.ApprovalNode;
 import com.smartoa.entity.ApprovalRecord;
 import com.smartoa.entity.ApprovalTemplate;
@@ -51,7 +52,7 @@ public class TemplateService {
     public void update(Long id, ApprovalTemplate data) {
         ApprovalTemplate template = templateMapper.selectById(id);
         if (template == null) {
-            throw new RuntimeException("模板不存在");
+            throw new BusinessException("模板不存在");
         }
         template.setName(data.getName());
         template.setDescription(data.getDescription());

@@ -4,7 +4,7 @@ import lombok.Data;
 import java.time.LocalDate;
 
 @Data
-public class LeaveSubmitDTO {
+public class LeaveSubmitRequest {
     private Long templateId;
     private String leaveType;
     private LocalDate startDate;

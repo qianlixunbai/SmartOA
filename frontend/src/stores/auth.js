@@ -22,8 +22,8 @@ export const useAuthStore = defineStore('auth', () => {
   async function fetchUser() {
     try {
       const data = await getCurrentUser()
-      user.value = data.user
-      localStorage.setItem('user', JSON.stringify(data.user))
+      user.value = data
+      localStorage.setItem('user', JSON.stringify(data))
     } catch {
       logout()
     }

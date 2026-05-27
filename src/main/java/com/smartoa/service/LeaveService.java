@@ -1,7 +1,8 @@
 package com.smartoa.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.smartoa.dto.LeaveSubmitDTO;
+import com.smartoa.common.BusinessException;
+import com.smartoa.dto.LeaveSubmitRequest;
 import com.smartoa.entity.ApprovalNode;
 import com.smartoa.entity.ApprovalRecord;
 import com.smartoa.entity.LeaveRequest;
@@ -31,10 +32,10 @@ public class LeaveService {
     private final UserMapper userMapper;
 
     @Transactional
-    public LeaveRequest submitLeave(Long applicantId, LeaveSubmitDTO dto) {
+    public LeaveRequest submitLeave(Long applicantId, LeaveSubmitRequest dto) {
         User applicant = userMapper.selectById(applicantId);
         if (applicant == null) {
-            throw new RuntimeException("用户不存在");
+            throw new BusinessException("用户不存在");
         }
 
         LeaveRequest request = new LeaveRequest();
@@ -58,13 +59,13 @@ public class LeaveService {
     public void approveLeave(Long requestId, Long approverId, String action, String comment) {
         LeaveRequest request = leaveRequestMapper.selectById(requestId);
         if (request == null) {
-            throw new RuntimeException("请假单不存在");
+            throw new BusinessException("请假单不存在");
         }
         if (!"PENDING".equals(request.getStatus())) {
-            throw new RuntimeException("该请假单已处理");
+            throw new BusinessException("该请假单已处理");
         }
         if (!approverId.equals(request.getCurrentApproverId())) {
-            throw new RuntimeException("您不是当前审批人");
+            throw new BusinessException("您不是当前审批人");
         }
 
         int currentStep = request.getApprovalStep();
@@ -180,7 +181,7 @@ public class LeaveService {
             case "DIRECT_LEADER" -> applicant.getDirectLeaderId();
             case "DEPARTMENT_HEAD" -> applicant.getDepartmentHeadId();
             case "SPECIFIC_USER" -> node.getApproverId();
-            default -> throw new RuntimeException("不支持的审批人类型: " + node.getApproverType());
+            default -> throw new BusinessException("不支持的审批人类型: " + node.getApproverType());
         };
     }
 
@@ -190,13 +191,13 @@ public class LeaveService {
     public void withdrawLeave(Long requestId, Long applicantId) {
         LeaveRequest request = leaveRequestMapper.selectById(requestId);
         if (request == null) {
-            throw new RuntimeException("请假单不存在");
+            throw new BusinessException("请假单不存在");
         }
         if (!"PENDING".equals(request.getStatus())) {
-            throw new RuntimeException("只能撤回审批中的申请");
+            throw new BusinessException("只能撤回审批中的申请");
         }
         if (!applicantId.equals(request.getApplicantId())) {
-            throw new RuntimeException("只能撤回自己的申请");
+            throw new BusinessException("只能撤回自己的申请");
         }
 
         ApprovalRecord record = new ApprovalRecord();
@@ -219,18 +220,18 @@ public class LeaveService {
     public void transferLeave(Long requestId, Long currentApproverId, Long toUserId) {
         LeaveRequest request = leaveRequestMapper.selectById(requestId);
         if (request == null) {
-            throw new RuntimeException("请假单不存在");
+            throw new BusinessException("请假单不存在");
         }
         if (!"PENDING".equals(request.getStatus())) {
-            throw new RuntimeException("只能转派审批中的申请");
+            throw new BusinessException("只能转派审批中的申请");
         }
         if (!currentApproverId.equals(request.getCurrentApproverId())) {
-            throw new RuntimeException("您不是当前审批人，无法转派");
+            throw new BusinessException("您不是当前审批人，无法转派");
         }
 
         User target = userMapper.selectById(toUserId);
         if (target == null) {
-            throw new RuntimeException("目标用户不存在");
+            throw new BusinessException("目标用户不存在");
         }
 
         ApprovalRecord record = new ApprovalRecord();

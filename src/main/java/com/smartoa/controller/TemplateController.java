@@ -1,5 +1,7 @@
 package com.smartoa.controller;
 
+import com.smartoa.common.BusinessException;
+import com.smartoa.common.Result;
 import com.smartoa.entity.ApprovalNode;
 import com.smartoa.entity.ApprovalTemplate;
 import com.smartoa.entity.TemplateField;
@@ -10,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -20,76 +21,72 @@ public class TemplateController {
     private final UserService userService;
 
     @GetMapping("/api/templates")
-    public List<ApprovalTemplate> list() {
-        return templateService.listAll();
+    public Result<List<ApprovalTemplate>> list() {
+        return Result.success(templateService.listAll());
     }
 
     @GetMapping("/api/templates/{id}")
-    public ApprovalTemplate getById(@PathVariable Long id) {
-        return templateService.getById(id);
+    public Result<ApprovalTemplate> getById(@PathVariable Long id) {
+        return Result.success(templateService.getById(id));
     }
 
     @PostMapping("/api/templates")
-    public Map<String, Object> create(@RequestBody ApprovalTemplate template) {
+    public Result<Void> create(@RequestBody ApprovalTemplate template) {
         User user = userService.getLoginUser();
         if (!"MANAGER".equals(user.getRole())) {
-            return Map.of("success", false, "message", "无权限");
+            throw new BusinessException(403, "无权限");
         }
         templateService.create(template);
-        return Map.of("success", true, "message", "创建成功");
+        return Result.success(null, "创建成功");
     }
 
     @PutMapping("/api/templates/{id}")
-    public Map<String, Object> update(@PathVariable Long id, @RequestBody ApprovalTemplate data) {
+    public Result<Void> update(@PathVariable Long id, @RequestBody ApprovalTemplate data) {
         User user = userService.getLoginUser();
         if (!"MANAGER".equals(user.getRole())) {
-            return Map.of("success", false, "message", "无权限");
+            throw new BusinessException(403, "无权限");
         }
         templateService.update(id, data);
-        return Map.of("success", true, "message", "更新成功");
+        return Result.success(null, "更新成功");
     }
 
     @DeleteMapping("/api/templates/{id}")
-    public Map<String, Object> delete(@PathVariable Long id) {
+    public Result<Void> delete(@PathVariable Long id) {
         User user = userService.getLoginUser();
         if (!"MANAGER".equals(user.getRole())) {
-            return Map.of("success", false, "message", "无权限");
+            throw new BusinessException(403, "无权限");
         }
         templateService.delete(id);
-        return Map.of("success", true, "message", "删除成功");
+        return Result.success(null, "删除成功");
     }
 
-    // ========== 审批节点 ==========
-
     @GetMapping("/api/templates/{id}/nodes")
-    public List<ApprovalNode> listNodes(@PathVariable Long id) {
-        return templateService.listNodes(id);
+    public Result<List<ApprovalNode>> listNodes(@PathVariable Long id) {
+        return Result.success(templateService.listNodes(id));
     }
 
     @PostMapping("/api/templates/{id}/nodes")
-    public Map<String, Object> saveNodes(@PathVariable Long id, @RequestBody List<ApprovalNode> nodes) {
+    public Result<Void> saveNodes(@PathVariable Long id, @RequestBody List<ApprovalNode> nodes) {
         User user = userService.getLoginUser();
         if (!"MANAGER".equals(user.getRole())) {
-            return Map.of("success", false, "message", "无权限");
+            throw new BusinessException(403, "无权限");
         }
         templateService.saveNodes(id, nodes);
-        return Map.of("success", true, "message", "保存成功");
+        return Result.success(null, "保存成功");
     }
 
     @DeleteMapping("/api/templates/{id}/nodes/{nodeId}")
-    public Map<String, Object> deleteNode(@PathVariable Long id, @PathVariable Long nodeId) {
+    public Result<Void> deleteNode(@PathVariable Long id, @PathVariable Long nodeId) {
         User user = userService.getLoginUser();
         if (!"MANAGER".equals(user.getRole())) {
-            return Map.of("success", false, "message", "无权限");
+            throw new BusinessException(403, "无权限");
         }
         templateService.deleteNode(nodeId);
-        return Map.of("success", true, "message", "删除成功");
+        return Result.success(null, "删除成功");
     }
 
-    // ========== 表单字段 ==========
-
     @GetMapping("/api/templates/{id}/fields")
-    public List<TemplateField> listFields(@PathVariable Long id) {
-        return templateService.listFields(id);
+    public Result<List<TemplateField>> listFields(@PathVariable Long id) {
+        return Result.success(templateService.listFields(id));
     }
 }

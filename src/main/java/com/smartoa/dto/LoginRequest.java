@@ -3,7 +3,7 @@ package com.smartoa.dto;
 import lombok.Data;
 
 @Data
-public class LoginDTO {
+public class LoginRequest {
     private String username;
     private String password;
 }
