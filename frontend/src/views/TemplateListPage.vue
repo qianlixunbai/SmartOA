@@ -46,8 +46,9 @@ onMounted(fetchData)
           </template>
         </el-table-column>
         <el-table-column prop="createTime" label="创建时间" width="160" />
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column label="操作" width="210" fixed="right">
           <template #default="{ row }">
+            <el-button size="small" @click="router.push(`/templates/preview/${row.id}`)">预览</el-button>
             <el-button size="small" @click="router.push(`/templates/edit/${row.id}`)">编辑</el-button>
             <el-button size="small" type="danger" @click="handleDelete(row.id)">删除</el-button>
           </template>

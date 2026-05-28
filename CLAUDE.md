@@ -6,15 +6,15 @@ Spring Boot + Vue 3 + MyBatis-Plus，聚焦请假审批流程。
 
 ## 技术栈
 
-- 后端：Spring Boot 4.0.6 + Java 21 + MyBatis-Plus + MySQL
-- 前端：Vue 3.5 + Vite 8 + Element Plus 2.14 + Pinia + Axios + pnpm
+- 后端：Spring Boot 3.5.14 + Java 21 + MyBatis-Plus 3.5.15 + MySQL
+- 前端：Vue 3.5.34 + Vite 8.0 + Element Plus 2.13.7 + Pinia 3.0.4 + Axios 1.15.2 + pnpm
 - 认证：JWT (jjwt 0.13.0) + BCrypt (spring-security-crypto)
 
 ## 启动方式
 
 ```bash
 # 后端
-./mvnw spring-boot:run          # → localhost:8080
+cd backend && ./mvnw spring-boot:run          # → localhost:8080
 
 # 前端
 cd frontend && pnpm run dev      # → localhost:5173（proxy /api → 8080）

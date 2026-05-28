@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { DocumentAdd, List, Setting, Plus, DataAnalysis, Download } from '@element-plus/icons-vue'
+import { DocumentAdd, List, Setting, Plus, DataAnalysis, Download, HomeFilled, Clock, Files, Avatar } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const auth = useAuthStore()
@@ -18,8 +18,10 @@ function handleExport() {
 }
 
 const menuItems = [
+  { path: '/dashboard', title: '工作台', icon: HomeFilled },
   { path: '/submit-application', title: '提交申请', icon: DocumentAdd },
-  { path: '/my-approvals', title: '我的审批', icon: List },
+  { path: '/my-requests', title: '我的申请', icon: Files },
+  { path: '/pending-approvals', title: '待审批', icon: Clock },
   { path: '/stats', title: '统计报表', icon: DataAnalysis }
 ]
 </script>
@@ -53,6 +55,16 @@ const menuItems = [
           <span>新建模板</span>
         </el-menu-item>
       </el-sub-menu>
+
+      <el-menu-item v-if="auth.isManager" index="/all-requests">
+        <el-icon><List /></el-icon>
+        <span>全部记录</span>
+      </el-menu-item>
+
+      <el-menu-item v-if="auth.isManager" index="/users">
+        <el-icon><Avatar /></el-icon>
+        <span>用户列表</span>
+      </el-menu-item>
 
       <el-menu-item v-if="auth.isManager" @click="handleExport">
         <el-icon><Download /></el-icon>

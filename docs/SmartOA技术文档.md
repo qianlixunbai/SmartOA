@@ -1,6 +1,6 @@
 # SmartOA 简易审批流管理系统 — 完整技术文档
 
-**版本：P2 完成版** | 日期：2026-05-27 | 技术栈：Spring Boot 4.0.6 + Vue 3 + MySQL 8.0 + JWT + MyBatis-Plus
+**版本：P2 完成版** | 日期：2026-05-27 | 技术栈：Spring Boot 3.5.14 + Vue 3 + MySQL 8.0 + JWT + MyBatis-Plus
 
 ---
 
@@ -327,7 +327,7 @@ public void checkTimeouts() {
 
 ### 3.1 技术栈
 
-Vue 3.5（Composition API）+ Element Plus 2.14 + Vite 8 + Pinia + Vue Router 4 + Axios + ECharts 5
+Vue 3.5（Composition API）+ Element Plus 2.13.7 + Vite 8 + Pinia + Vue Router 5 + Axios + ECharts 5
 
 入口文件 `main.js`：创建 Vue 应用 → 注册 Element Plus Icons → 安装 Pinia/Router/ElementPlus → 挂载 `#app`
 
@@ -549,7 +549,7 @@ jwt.expiration=86400000    ← 24 小时过期（毫秒）
 
 3. 启动后端：
    ```bash
-   ./mvnw spring-boot:run        # → localhost:8080
+   cd backend && ./mvnw spring-boot:run        # → localhost:8080
    ```
 
 4. 启动前端：
@@ -581,16 +581,18 @@ jwt.expiration=86400000    ← 24 小时过期（毫秒）
 
 ```
 smartoa/
-├── src/main/java/com/smartoa/
-│   ├── common/                   # Result<T>、BusinessException、GlobalExceptionHandler
-│   ├── config/                   # JWT 配置、CORS、过滤器
-│   ├── controller/               # 4 个 REST 控制器
-│   ├── dto/                      # 数据传输对象
-│   ├── entity/                   # 7 个实体类
-│   ├── mapper/                   # 7 个 MyBatis-Plus Mapper
-│   └── service/                  # 5 个 Service + TimeoutScheduler
-├── src/main/resources/
-│   └── application.properties
+├── backend/
+│   ├── src/main/java/com/smartoa/
+│   │   ├── common/                   # Result<T>、BusinessException、GlobalExceptionHandler
+│   │   ├── config/                   # JWT 配置、CORS、过滤器
+│   │   ├── controller/               # 5 个 REST 控制器
+│   │   ├── dto/                      # 数据传输对象
+│   │   ├── entity/                   # 7 个实体类
+│   │   ├── mapper/                   # 7 个 MyBatis-Plus Mapper
+│   │   └── service/                  # 5 个 Service + TimeoutScheduler
+│   ├── src/main/resources/
+│   │   └── application.properties
+│   └── pom.xml
 ├── frontend/
 │   └── src/
 │       ├── api/                  # auth.js / leave.js / template.js
@@ -602,8 +604,7 @@ smartoa/
 │       └── views/                # 8 个 Page 组件
 ├── docs/                         # SQL 迁移脚本 + 技术文档
 ├── CLAUDE.md                     # 项目说明与开发进度
-├── README.md                     # 项目 README
-└── pom.xml
+└── README.md                     # 项目 README
 ```
 
 ---
