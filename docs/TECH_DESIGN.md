@@ -40,7 +40,7 @@
 
 | 层级 | 技术 | 版本 | 选型理由 |
 |---|---|---|---|
-| 后端框架 | Spring Boot | 4.0.6 | 企业级 Java 标准框架 |
+| 后端框架 | Spring Boot | 3.5.14 | 企业级 Java 标准框架 |
 | ORM | MyBatis-Plus | 3.5.15 | 灵活查询 + Lambda 类型安全 + 自动 CRUD |
 | 数据库 | MySQL | 8.x | 成熟稳定，支持 utf8mb4 |
 | 认证 | JJWT | 0.13.0 | 轻量 JWT 实现 |
@@ -57,7 +57,7 @@
 
 ## 3. 包结构
 
-### 3.1 后端（src/main/java/com/smartoa/）
+### 3.1 后端（backend/src/main/java/com/smartoa/）
 
 ```
 com.smartoa

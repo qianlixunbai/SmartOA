@@ -596,12 +596,12 @@ smartoa/
 ├── frontend/
 │   └── src/
 │       ├── api/                  # auth.js / leave.js / template.js
-│       ├── components/           # 4 个共享组件
+│       ├── components/           # 6 个共享组件
 │       ├── layouts/              # AuthLayout / MainLayout
 │       ├── router/               # index.js
 │       ├── stores/               # auth.js / approval.js / users.js
 │       ├── utils/                # constants.js
-│       └── views/                # 8 个 Page 组件
+│       └── views/                # 15 个 Page 组件
 ├── docs/                         # SQL 迁移脚本 + 技术文档
 ├── CLAUDE.md                     # 项目说明与开发进度
 └── README.md                     # 项目 README
