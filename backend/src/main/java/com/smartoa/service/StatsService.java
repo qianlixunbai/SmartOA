@@ -29,7 +29,7 @@ public class StatsService {
         List<LeaveRequest> approved = leaveRequestMapper.selectList(
                 new LambdaQueryWrapper<LeaveRequest>().eq(LeaveRequest::getStatus, "APPROVED"));
 
-        Map<Long, List<Long>> templateDurations = new LinkedHashMap<>();
+        Map<Long, List<Double>> templateDurations = new LinkedHashMap<>();
         for (LeaveRequest r : approved) {
             List<ApprovalRecord> records = approvalRecordMapper.selectList(
                     new LambdaQueryWrapper<ApprovalRecord>()
@@ -38,19 +38,19 @@ public class StatsService {
             if (records.isEmpty()) continue;
 
             LocalDateTime firstAction = records.get(0).getCreateTime();
-            long minutes = Duration.between(firstAction, records.get(records.size() - 1).getCreateTime()).toMinutes();
+            double minutes = Duration.between(firstAction, records.get(records.size() - 1).getCreateTime()).toSeconds() / 60.0;
             Long templateId = r.getTemplateId() != null ? r.getTemplateId() : 0;
             templateDurations.computeIfAbsent(templateId, k -> new ArrayList<>()).add(minutes);
         }
 
         List<Map<String, Object>> result = new ArrayList<>();
-        for (Map.Entry<Long, List<Long>> entry : templateDurations.entrySet()) {
-            String templateName = "未知模板";
+        for (Map.Entry<Long, List<Double>> entry : templateDurations.entrySet()) {
+            String templateName = "(未关联模板)";
             if (entry.getKey() != 0) {
                 ApprovalTemplate t = templateMapper.selectById(entry.getKey());
                 if (t != null) templateName = t.getName();
             }
-            double avg = entry.getValue().stream().mapToLong(Long::longValue).average().orElse(0);
+            double avg = entry.getValue().stream().mapToDouble(Double::doubleValue).average().orElse(0);
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("templateId", entry.getKey());
             item.put("templateName", templateName);
@@ -74,7 +74,7 @@ public class StatsService {
 
         List<Map<String, Object>> result = new ArrayList<>();
         for (Map.Entry<Long, Long> entry : counts.entrySet()) {
-            String templateName = "未知模板";
+            String templateName = "(未关联模板)";
             if (entry.getKey() != 0) {
                 ApprovalTemplate t = templateMapper.selectById(entry.getKey());
                 if (t != null) templateName = t.getName();
